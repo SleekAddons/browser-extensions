@@ -4,14 +4,14 @@ A collection of browser extensions for Chrome and Firefox, built with [WXT](http
 
 ## Extensions
 
-| Folder | Name | Description |
-| --- | --- | --- |
-| [extensions/breakpoint-viewer](extensions/breakpoint-viewer/README.md) | Breakpoint Viewer | Show the active CSS breakpoint on any page (Tailwind, Bootstrap, custom). |
-| [extensions/ollama-client](extensions/ollama-client/README.md) | Ollama Client | Chat with local Ollama AI models from a side panel. |
-| [extensions/pihole-manager](extensions/pihole-manager/README.md) | Pi-hole Manager | Monitor and control Pi-hole instances from the toolbar. |
-| [extensions/table-extractor](extensions/table-extractor/README.md) | Table Extractor | Extract HTML tables and export to CSV, JSON, XML, HTML, XLSX. |
-| [extensions/tool-hub](extensions/tool-hub/README.md) | Tool Hub | Discover and launch web tools, with i18n support. |
-| [extensions/website-blocker](extensions/website-blocker/README.md) | Website Blocker | Block sites with schedules, time limits, and usage stats. |
+| Folder | Name | Description | Chrome | Firefox |
+| --- | --- | --- | --- | --- |
+| [extensions/breakpoint-viewer](extensions/breakpoint-viewer/README.md) | Breakpoint Viewer | Show the active CSS breakpoint on any page (Tailwind, Bootstrap, custom). | [Chrome](https://chromewebstore.google.com/detail/tailwind-breakpoint-viewe/opoganallbaahcdakchbmnlmimemobid) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/breakpoint-viewer/) |
+| [extensions/ollama-client](extensions/ollama-client/README.md) | Ollama Client | Chat with local Ollama AI models from a side panel. | [Chrome](https://chromewebstore.google.com/detail/ollama-client/chjmddjaldiindjecpdpfdpojeamfdgb) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/ollama-client-by-sleek-addons/) |
+| [extensions/pihole-manager](extensions/pihole-manager/README.md) | Pi-hole Manager | Monitor and control Pi-hole instances from the toolbar. | [Chrome](https://chromewebstore.google.com/detail/pi-hole-manager/lknjhhcjbaahogmgnjfkdpkenebfcjb) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/pi-hole-manager/) |
+| [extensions/table-extractor](extensions/table-extractor/README.md) | Table Extractor | Extract HTML tables and export to CSV, JSON, XML, HTML, XLSX. | [Chrome](https://chromewebstore.google.com/detail/table-extractor/poheddickmdclbcjkhfkeccfnolplnoi) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/table-extractor/) |
+| [extensions/tool-hub](extensions/tool-hub/README.md) | Tool Hub | Discover and launch web tools, with i18n support. | [Chrome](https://chromewebstore.google.com/detail/tool-hub/njmnbhbdgnbkjknnmfhinhbbpjpcclld) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/tool-hub/) |
+| [extensions/website-blocker](extensions/website-blocker/README.md) | Website Blocker | Block sites with schedules, time limits, and usage stats. | [Chrome](https://chromewebstore.google.com/detail/website-blocker/bfbhaeaddmhmiilkmolfjfppknmimpei) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/website-blocker-by-sleekaddons/) |
 
 ## Requirements
 
