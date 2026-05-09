@@ -24,7 +24,8 @@
     "dev:bookmarks-sync": "EXT=bookmarks-sync wxt",
     "build:bookmarks-sync": "EXT=bookmarks-sync wxt zip",
     "postinstall": "wxt prepare",
-    "generate-icons": "tsx scripts/generate-icons.ts"
+    "generate-icons": "tsx scripts/generate-icons.ts",
+    "generate-promo-tiles": "tsx scripts/generate-promo-tiles.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
