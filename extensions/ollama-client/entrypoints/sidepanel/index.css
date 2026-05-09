@@ -1,0 +1,33 @@
+body {
+  margin: 0;
+}
+
+/* Prevent markdown content from overflowing message bubbles */
+.sd-bubble pre,
+.sd-bubble table {
+  overflow-x: auto;
+}
+
+.sd-bubble pre,
+.sd-bubble p,
+.sd-bubble ul,
+.sd-bubble ol,
+.sd-bubble blockquote {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.sd-bubble ul,
+.sd-bubble ol {
+  list-style-position: outside;
+  padding-left: 1.25rem;
+}
+
+.sd-bubble li > ul,
+.sd-bubble li > ol {
+  padding-left: 1rem;
+}
+
+.sd-bubble li > p {
+  display: inline;
+}

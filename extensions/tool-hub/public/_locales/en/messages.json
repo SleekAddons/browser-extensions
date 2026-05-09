@@ -1,0 +1,110 @@
+{
+  "extName": {
+    "message": "Tool Hub",
+    "description": "Extension name shown in Chrome Web Store and extension management"
+  },
+  "extDescription": {
+    "message": "Find and save useful web tools in one place",
+    "description": "Extension description shown in Chrome Web Store"
+  },
+  "tabOnline": {
+    "message": "Online",
+    "description": "Label for the online search tab"
+  },
+  "tabBookmarks": {
+    "message": "Bookmarks",
+    "description": "Label for the bookmarks tab"
+  },
+  "searchPlaceholderOnline": {
+    "message": "Search tools online…",
+    "description": "Placeholder text in the search input when on the online tab"
+  },
+  "searchPlaceholderBookmarks": {
+    "message": "Filter bookmarks…",
+    "description": "Placeholder text in the search input when on the bookmarks tab"
+  },
+  "searchAriaLabel": {
+    "message": "Search tools",
+    "description": "Accessible label for the search input"
+  },
+  "statusSearching": {
+    "message": "Searching…",
+    "description": "Status text shown while a search is in progress"
+  },
+  "statusSearchToDiscover": {
+    "message": "Search to discover",
+    "description": "Status text shown before the user types a query"
+  },
+  "statusNoResults": {
+    "message": "No results found",
+    "description": "Status text when a search returns zero results"
+  },
+  "statusResultsFound": {
+    "message": "$COUNT$ results found",
+    "description": "Status text showing how many results were found (plural)",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "statusResultFound": {
+    "message": "$COUNT$ result found",
+    "description": "Status text when exactly one result is found (singular)",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "statusLoading": {
+    "message": "Loading…",
+    "description": "Status text shown while bookmarks are loading"
+  },
+  "statusSavedBookmarks": {
+    "message": "saved bookmarks",
+    "description": "Label shown after the bookmark count (plural)"
+  },
+  "statusSavedBookmark": {
+    "message": "saved bookmark",
+    "description": "Label shown after the bookmark count (singular)"
+  },
+  "emptyOnlinePrompt": {
+    "message": "Type a query to search tools online.",
+    "description": "Placeholder message in the online tab before searching"
+  },
+  "emptyNoToolsFound": {
+    "message": "No tools found for your query.",
+    "description": "Message shown when a search returns no matching tools"
+  },
+  "emptyBookmarksNone": {
+    "message": "No bookmarks yet.",
+    "description": "Message shown when the user has no bookmarks"
+  },
+  "emptyBookmarksNoMatch": {
+    "message": "No bookmarks match your filter.",
+    "description": "Message shown when the bookmark filter matches nothing"
+  },
+  "emptyBookmarksCta": {
+    "message": "Search online and bookmark tools here.",
+    "description": "Call-to-action shown below the empty bookmarks message"
+  },
+  "showMore": {
+    "message": "Show more",
+    "description": "Button to expand a tool description"
+  },
+  "showLess": {
+    "message": "Show less",
+    "description": "Button to collapse a tool description"
+  },
+  "removeBookmark": {
+    "message": "Remove bookmark",
+    "description": "Accessible label for the remove-bookmark button"
+  },
+  "addBookmark": {
+    "message": "Add bookmark",
+    "description": "Accessible label for the add-bookmark button"
+  }
+}

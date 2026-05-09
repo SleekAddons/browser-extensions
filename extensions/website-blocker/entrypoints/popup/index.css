@@ -1,0 +1,17 @@
+body {
+  margin: 0;
+}
+
+.time-input-no-icon::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+
+.time-input-no-icon::-webkit-clear-button,
+.time-input-no-icon::-webkit-inner-spin-button {
+  display: none;
+}
+
+.time-input-no-icon {
+  -moz-appearance: textfield;
+}
