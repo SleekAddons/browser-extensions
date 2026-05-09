@@ -49,9 +49,12 @@ export function useToolHub() {
     if (debounceTimer.current) clearTimeout(debounceTimer.current)
 
     if (tab !== 'online' || !query.trim()) {
+      abortController.current?.abort()
+      abortController.current = null
       setSearchResults([])
       setSearchError(null)
       setHasSearched(false)
+      setIsSearching(false)
       return
     }
 
