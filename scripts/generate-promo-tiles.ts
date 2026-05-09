@@ -163,7 +163,7 @@ function buildTileSvg(opts: {
   // Use modest side padding as a hard cap; the composition will still be
   // visually centered based on actual content width. Smaller tiles get a
   // proportionally larger padding ratio so the content doesn't feel cramped.
-  const sidePaddingRatio = width < 800 ? 0.06 : 0.05
+  const sidePaddingRatio = width < 800 ? 0.09 : 0.05
   const sidePadding = Math.round(width * sidePaddingRatio)
   const maxContentWidth = width - sidePadding * 2
   const maxTextWidth = maxContentWidth - badgeSize - badgeTextGap
