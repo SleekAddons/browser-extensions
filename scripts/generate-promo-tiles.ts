@@ -107,22 +107,27 @@ function escapeXml(s: string): string {
     .replace(/'/g, '&apos;')
 }
 
-/** Naive word-wrap into N lines that fit a max chars-per-line budget. */
+/** Naive word-wrap into N lines that fit a max chars-per-line budget.
+ * If the text doesn't fit in maxLines, the remainder is forced into the last
+ * line so we never silently drop trailing words. */
 function wrap(text: string, maxChars: number, maxLines: number): string[] {
   const words = text.split(/\s+/).filter(Boolean)
   const lines: string[] = []
   let current = ''
-  for (const w of words) {
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i]
     const candidate = current ? `${current} ${w}` : w
     if (candidate.length <= maxChars) {
       current = candidate
       continue
     }
-    if (current) lines.push(current)
-    if (lines.length >= maxLines) {
-      current = ''
-      break
+    if (lines.length >= maxLines - 1) {
+      // Last allowed line: append everything remaining so no words are lost.
+      const rest = words.slice(i).join(' ')
+      current = current ? `${current} ${rest}` : rest
+      continue
     }
+    if (current) lines.push(current)
     current = w
   }
   if (current && lines.length < maxLines) lines.push(current)
@@ -145,17 +150,20 @@ function buildTileSvg(opts: {
   const badgeDy = Math.round(badgeFontSize * 0.35)
 
   // Gap between badge and text block.
-  const badgeTextGap = Math.round(height * 0.1)
+  const badgeTextGap = Math.round(height * 0.08)
 
   // Approximate character widths (em units) for the system sans stack.
-  const NAME_CHAR_EM = 0.58 // bold
-  const TAGLINE_CHAR_EM = 0.5 // regular
+  // These are deliberately conservative — overestimating makes the auto-
+  // centered composition drift left because textBlockWidth ends up larger
+  // than the actually rendered text.
+  const NAME_CHAR_EM = 0.52 // bold
+  const TAGLINE_CHAR_EM = 0.46 // regular
 
   // Auto-shrink the name font until it fits a sensible max width.
   // Use modest side padding as a hard cap; the composition will still be
   // visually centered based on actual content width. Smaller tiles get a
   // proportionally larger padding ratio so the content doesn't feel cramped.
-  const sidePaddingRatio = width < 800 ? 0.1 : 0.06
+  const sidePaddingRatio = width < 800 ? 0.06 : 0.05
   const sidePadding = Math.round(width * sidePaddingRatio)
   const maxContentWidth = width - sidePadding * 2
   const maxTextWidth = maxContentWidth - badgeSize - badgeTextGap
