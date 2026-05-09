@@ -5,9 +5,9 @@ const SETTINGS_KEY = 'bookmarks_sync_settings'
 const STATUS_KEY = 'bookmarks_sync_status'
 
 export const DEFAULT_SETTINGS: SyncSettings = {
-  serverUrl: 'http://localhost:3000',
-  email: 'test@test.com',
-  password: 'test1test',
+  serverUrl: '',
+  email: '',
+  password: '',
 }
 
 export const DEFAULT_STATUS: SyncStatus = {
