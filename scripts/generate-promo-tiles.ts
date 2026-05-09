@@ -48,9 +48,7 @@ const NAME_OVERRIDE: Record<string, string> = {
 
 /** Short tagline shown under the name. Falls back to manifest description. */
 const TAGLINE_OVERRIDE: Record<string, string> = {
-  'bookmarks-sync': 'Sync bookmarks across every browser.',
   'breakpoint-viewer': 'See the active CSS breakpoint instantly.',
-  'hreflang-validator': 'Catch broken hreflang tags in seconds.',
   'ollama-client': 'Chat with local AI in your browser.',
   'pihole-manager': 'Control every Pi-hole from one place.',
   'table-extractor': 'Export any web table to CSV or XLSX.',

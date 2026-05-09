@@ -11,8 +11,6 @@
     "build:table-extractor": "EXT=table-extractor wxt zip",
     "dev:breakpoint-viewer": "EXT=breakpoint-viewer wxt",
     "build:breakpoint-viewer": "EXT=breakpoint-viewer wxt zip",
-    "dev:hreflang-validator": "EXT=hreflang-validator wxt",
-    "build:hreflang-validator": "EXT=hreflang-validator wxt zip",
     "dev:pihole-manager": "EXT=pihole-manager wxt",
     "build:pihole-manager": "EXT=pihole-manager wxt zip",
     "dev:ollama-client": "EXT=ollama-client wxt",
@@ -21,8 +19,6 @@
     "build:tool-hub": "EXT=tool-hub wxt zip",
     "dev:website-blocker": "EXT=website-blocker wxt",
     "build:website-blocker": "EXT=website-blocker wxt zip",
-    "dev:bookmarks-sync": "EXT=bookmarks-sync wxt",
-    "build:bookmarks-sync": "EXT=bookmarks-sync wxt zip",
     "postinstall": "wxt prepare",
     "generate-icons": "tsx scripts/generate-icons.ts",
     "generate-promo-tiles": "tsx scripts/generate-promo-tiles.ts"
