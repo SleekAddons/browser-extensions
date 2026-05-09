@@ -28,20 +28,7 @@ export default function ToolHubView() {
   const { ref: onlineRef, needsPadding: onlinePadding } = useScrollable<HTMLDivElement>()
   const { ref: bookmarksRef, needsPadding: bookmarksPadding } = useScrollable<HTMLDivElement>()
 
-  const count = tab === 'online' ? searchResults.length : bookmarks.length
-  const label = (() => {
-    if (tab === 'online') {
-      if (isSearching) return t('statusSearching')
-      if (!isSearchMode) return t('statusSearchToDiscover')
-      if (!hasSearched) return t('statusSearching')
-      if (searchResults.length === 0) return t('statusNoResults')
-      return searchResults.length === 1
-        ? t('statusResultFound', String(searchResults.length))
-        : t('statusResultsFound', String(searchResults.length))
-    }
-    if (loadingBookmarks) return t('statusLoading')
-    return `${count} ${count === 1 ? t('statusSavedBookmark') : t('statusSavedBookmarks')}`
-  })()
+  const showSpinner = tab === 'online' ? isSearching : loadingBookmarks
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
@@ -67,12 +54,18 @@ export default function ToolHubView() {
             <Input
               autoFocus
               spellCheck={false}
-              className="pl-9 pr-2 h-10"
+              className="pl-9 pr-10 h-10"
               placeholder={tab === 'online' ? t('searchPlaceholderOnline') : t('searchPlaceholderBookmarks')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               aria-label={t('searchAriaLabel')}
             />
+            {showSpinner && (
+              <Loader2
+                size={14}
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 shrink-0 animate-spin text-primary"
+              />
+            )}
           </div>
 
           {/* Error banner */}
@@ -82,14 +75,6 @@ export default function ToolHubView() {
               <span>{searchError}</span>
             </div>
           )}
-
-          {/* Status bar - always visible */}
-          <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2">
-            {isSearching && (
-              <Loader2 size={12} className="shrink-0 animate-spin text-primary" />
-            )}
-            <span className="text-muted-foreground">{label}</span>
-          </div>
         </div>
 
         {/* Online tab - scrollable */}
