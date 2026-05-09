@@ -4,7 +4,7 @@ import ToolHubView from '../../components/ToolHubView'
 
 export default function App() {
   return (
-    <PopupContainer height={500} fixedHeight className="flex flex-col">
+    <PopupContainer height={600} fixedHeight className="flex flex-col">
       <ExtensionHeader />
       <ToolHubView />
     </PopupContainer>

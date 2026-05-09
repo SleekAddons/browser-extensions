@@ -4,7 +4,7 @@ interface PopupContainerProps {
   children: React.ReactNode
   /** Popup width in pixels (default: 400) */
   width?: number
-  /** Popup max-height in pixels (default: 500) */
+  /** Popup max-height in pixels (default: 600) */
   height?: number
   /**
    * When true, applies a fixed `height` (instead of `max-height`) and hides
@@ -25,7 +25,7 @@ interface PopupContainerProps {
 export default function PopupContainer({
   children,
   width = 400,
-  height = 500,
+  height = 600,
   fixedHeight = false,
   className,
 }: PopupContainerProps) {

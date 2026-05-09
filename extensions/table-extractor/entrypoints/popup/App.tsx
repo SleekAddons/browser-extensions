@@ -7,7 +7,7 @@ export default function App() {
   const { ref: contentRef, needsPadding: contentPadding } = useScrollable()
 
   return (
-    <PopupContainer height={500} fixedHeight className="flex flex-col">
+    <PopupContainer height={600} fixedHeight className="flex flex-col">
       <ExtensionHeader />
       <div
         ref={contentRef}
