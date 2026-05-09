@@ -4,7 +4,10 @@ import AddInstanceDialog from './AddInstanceDialog'
 import EditInstanceDialog from './EditInstanceDialog'
 import InstanceCard from './InstanceCard'
 import ItemCounter from '@/components/ItemCounter'
-import { ShieldAlert } from 'lucide-react'
+import { Card } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { ShieldAlert, ShieldCheck, ShieldOff } from 'lucide-react'
 import EmptyState from '@/components/EmptyState'
 import { useState } from 'react'
 import { useScrollable } from '@/lib/useScrollable'
@@ -20,6 +23,7 @@ export default function PiholeManagerView(props: { className?: string }) {
     deleteInstance,
     refreshInstance,
     toggleBlocking,
+    toggleAllBlocking,
     addCurrentDomain,
     removeCurrentDomain,
   } = usePiholeManager()
@@ -28,8 +32,44 @@ export default function PiholeManagerView(props: { className?: string }) {
   const [showAddInstance, setShowAddInstance] = useState(false)
   const { ref: instancesRef, needsPadding: instancesPadding } = useScrollable()
 
+  const connectedStates = Array.from(states.values()).filter(
+    (s) => s.session?.sid && s.blocking,
+  )
+  const hasConnected = connectedStates.length > 0
+  const allEnabled = hasConnected && connectedStates.every((s) => s.blocking?.blocking === 'enabled')
+  const allDisabled = hasConnected && connectedStates.every((s) => s.blocking?.blocking !== 'enabled')
+  const anyLoading = connectedStates.some((s) => s.loading)
+
   return (
     <div className={`flex min-h-0 flex-col gap-3 ${props.className ?? ''}`}>
+      {hasConnected && (
+        <Card className="flex-row items-center justify-between gap-3 rounded-lg px-4 py-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <span
+              className={
+                allEnabled
+                  ? 'flex size-6 shrink-0 items-center justify-center rounded-md bg-emerald-500/15 text-emerald-600 transition-colors duration-200 dark:text-emerald-500'
+                  : 'flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground transition-colors duration-200'
+              }
+            >
+              {allEnabled ? <ShieldCheck size={14} /> : <ShieldOff size={14} />}
+            </span>
+            <Label className="text-sm font-medium leading-none">
+              {allEnabled
+                ? `All ${connectedStates.length} instance${connectedStates.length === 1 ? '' : 's'} enabled`
+                : allDisabled
+                  ? `All ${connectedStates.length} instance${connectedStates.length === 1 ? '' : 's'} disabled`
+                  : 'Some instances disabled'}
+            </Label>
+          </div>
+          <Switch
+            checked={allEnabled}
+            onCheckedChange={(checked) => toggleAllBlocking(checked)}
+            disabled={anyLoading}
+          />
+        </Card>
+      )}
+
       <ItemCounter
         count={instances.length}
         label="Instances"

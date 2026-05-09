@@ -188,6 +188,47 @@ export function usePiholeManager() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...[...states.values()].map(s => s.disabledUntil)])
 
+  /** Toggle blocking on/off across all connected instances at once. */
+  const toggleAllBlocking = useCallback(
+    async (enable: boolean, timer?: number) => {
+      const entries = Array.from(statesRef.current.entries()).filter(
+        ([, s]) => s.session?.sid && s.blocking,
+      )
+      if (entries.length === 0) return
+
+      // Mark all as loading up-front
+      setStates((prev) => {
+        const next = new Map(prev)
+        for (const [id] of entries) {
+          const existing = next.get(id)
+          if (existing) next.set(id, { ...existing, loading: true, error: null })
+        }
+        return next
+      })
+
+      await Promise.all(entries.map(async ([id, state]) => {
+        try {
+          const result = await setBlocking(
+            state.instance.baseUrl,
+            state.session!.sid!,
+            enable,
+            enable ? undefined : timer ?? null,
+          )
+          const disabledUntil = result.timer != null && result.timer > 0
+            ? Date.now() + result.timer * 1000
+            : null
+          updateState(id, { blocking: result, loading: false, disabledUntil })
+        } catch (err) {
+          updateState(id, {
+            loading: false,
+            error: err instanceof Error ? err.message : 'Toggle failed',
+          })
+        }
+      }))
+    },
+    [updateState],
+  )
+
   /** Look up the current tab's domain status on a specific instance. */
   const lookupDomainStatus = useCallback(
     async (id: string) => {
@@ -342,6 +383,7 @@ export function usePiholeManager() {
     deleteInstance,
     refreshInstance,
     toggleBlocking,
+    toggleAllBlocking,
     addCurrentDomain,
     removeCurrentDomain,
     lookupDomainStatus,
