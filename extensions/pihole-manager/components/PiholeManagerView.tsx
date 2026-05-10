@@ -4,9 +4,7 @@ import AddInstanceDialog from './AddInstanceDialog'
 import EditInstanceDialog from './EditInstanceDialog'
 import InstanceCard from './InstanceCard'
 import ItemCounter from '@/components/ItemCounter'
-import { Card } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
+import ExtensionToggle from '@/components/ExtensionToggle'
 import { ShieldAlert, ShieldCheck, ShieldOff } from 'lucide-react'
 import EmptyState from '@/components/EmptyState'
 import { useState } from 'react'
@@ -43,31 +41,23 @@ export default function PiholeManagerView(props: { className?: string }) {
   return (
     <div className={`flex min-h-0 flex-col gap-3 ${props.className ?? ''}`}>
       {hasConnected && (
-        <Card className="flex-row items-center justify-between gap-3 rounded-lg px-4 py-4">
-          <div className="flex min-w-0 items-center gap-2">
-            <span
-              className={
-                allEnabled
-                  ? 'flex size-6 shrink-0 items-center justify-center rounded-md bg-emerald-500/15 text-emerald-600 transition-colors duration-200 dark:text-emerald-500'
-                  : 'flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground transition-colors duration-200'
-              }
-            >
-              {allEnabled ? <ShieldCheck size={14} /> : <ShieldOff size={14} />}
-            </span>
-            <Label className="text-sm font-medium leading-none">
-              {allEnabled
-                ? `All ${connectedStates.length} instance${connectedStates.length === 1 ? '' : 's'} enabled`
-                : allDisabled
-                  ? `All ${connectedStates.length} instance${connectedStates.length === 1 ? '' : 's'} disabled`
-                  : 'Some instances disabled'}
-            </Label>
-          </div>
-          <Switch
-            checked={allEnabled}
-            onCheckedChange={(checked) => toggleAllBlocking(checked)}
-            disabled={anyLoading}
-          />
-        </Card>
+        <ExtensionToggle
+          enabled={allEnabled}
+          onToggle={(checked) => toggleAllBlocking(checked)}
+          disabled={anyLoading}
+          variant={allEnabled ? 'enabled' : allDisabled ? 'disabled' : 'warning'}
+          statusLabel="Global switch"
+          description={
+            allEnabled
+              ? `All ${connectedStates.length} instance${connectedStates.length === 1 ? '' : 's'} enabled`
+              : allDisabled
+                ? `All ${connectedStates.length} instance${connectedStates.length === 1 ? '' : 's'} disabled`
+                : 'Some instances disabled'
+          }
+          enabledIcon={<ShieldCheck size={14} />}
+          disabledIcon={<ShieldOff size={14} />}
+          warningIcon={<ShieldAlert size={14} />}
+        />
       )}
 
       <ItemCounter
