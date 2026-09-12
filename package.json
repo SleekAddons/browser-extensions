@@ -15,8 +15,6 @@
     "build:pihole-manager": "EXT=pihole-manager wxt zip",
     "dev:ollama-client": "EXT=ollama-client wxt",
     "build:ollama-client": "EXT=ollama-client wxt zip",
-    "dev:tool-hub": "EXT=tool-hub wxt",
-    "build:tool-hub": "EXT=tool-hub wxt zip",
     "dev:website-blocker": "EXT=website-blocker wxt",
     "build:website-blocker": "EXT=website-blocker wxt zip",
     "postinstall": "wxt prepare",

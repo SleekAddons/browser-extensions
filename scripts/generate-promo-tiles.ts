@@ -43,7 +43,6 @@ const INITIALS_OVERRIDE: Record<string, string> = {
 /** Override auto-derived display name for specific extensions. */
 const NAME_OVERRIDE: Record<string, string> = {
   'pihole-manager': 'Pi-hole Manager',
-  'tool-hub': 'Tool Hub',
 }
 
 /** Short tagline shown under the name. Falls back to manifest description. */
@@ -52,7 +51,6 @@ const TAGLINE_OVERRIDE: Record<string, string> = {
   'ollama-client': 'Chat with local AI in your browser.',
   'pihole-manager': 'Control every Pi-hole from one place.',
   'table-extractor': 'Export any web table to CSV or XLSX.',
-  'tool-hub': 'Find and save the web tools you love.',
   'website-blocker': 'Block distractions. Reclaim your focus.',
 }
 
@@ -79,21 +77,6 @@ function readManifestMeta(slug: string): { name?: string; description?: string }
   return {
     name: nameMatch?.[1],
     description: descMatch?.[1],
-  }
-}
-
-/** Read locale messages for tool-hub style i18n manifests. */
-function readLocaleMeta(slug: string): { name?: string; description?: string } {
-  const file = path.join(EXTENSIONS_DIR, slug, 'public', '_locales', 'en', 'messages.json')
-  if (!fs.existsSync(file)) return {}
-  try {
-    const json = JSON.parse(fs.readFileSync(file, 'utf8'))
-    return {
-      name: json?.extName?.message,
-      description: json?.extDescription?.message,
-    }
-  } catch {
-    return {}
   }
 }
 
@@ -255,15 +238,14 @@ function discoverExtensions(): string[] {
 
 async function generateTilesFor(slug: string) {
   const manifestMeta = readManifestMeta(slug)
-  const localeMeta = readLocaleMeta(slug)
 
   const rawName = manifestMeta.name && !manifestMeta.name.startsWith('__MSG_') ? manifestMeta.name : undefined
-  const name = NAME_OVERRIDE[slug] ?? rawName ?? localeMeta.name ?? slugToName(slug)
+  const name = NAME_OVERRIDE[slug] ?? rawName ?? slugToName(slug)
 
   const rawDesc = manifestMeta.description && !manifestMeta.description.startsWith('__MSG_')
     ? manifestMeta.description
     : undefined
-  const tagline = TAGLINE_OVERRIDE[slug] ?? rawDesc ?? localeMeta.description ?? ''
+  const tagline = TAGLINE_OVERRIDE[slug] ?? rawDesc ?? ''
 
   const initials = INITIALS_OVERRIDE[slug] ?? getInitials(name)
 
