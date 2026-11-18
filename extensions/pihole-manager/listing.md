@@ -39,6 +39,4 @@ The extension talks only to the Pi-hole servers you add. Passwords are stored lo
 OPEN SOURCE
 The full source code is on GitHub: https://github.com/SleekAddons/browser-extensions
 Bug reports and feature requests are welcome.
-
-Pi-hole Manager is an independent project and is not affiliated with Pi-hole LLC.
 ```
