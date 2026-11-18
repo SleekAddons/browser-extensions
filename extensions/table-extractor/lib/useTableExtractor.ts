@@ -1,5 +1,5 @@
 import { browser } from 'wxt/browser'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { ExportFormat, TableData, TableInfo } from './types'
 
 async function getActiveTabId(): Promise<number | null> {
@@ -7,45 +7,63 @@ async function getActiveTabId(): Promise<number | null> {
   return tab?.id ?? null
 }
 
-function scanTablesInPage(): TableInfo[] {
-  const tables = Array.from(document.querySelectorAll('table')).filter(
-    (t) => t.rows.length > 0,
-  )
-  return tables.map((table, index) => {
-    const getCellText = (cell: HTMLTableCellElement) => (cell.textContent ?? '').trim()
-    const headerRow = (table.querySelector('thead tr') as HTMLTableRowElement | null) ?? table.rows[0]
-    const headers = headerRow ? Array.from(headerRow.cells).map(getCellText) : []
-    const allRows = table.querySelector('tbody')
-      ? Array.from(table.tBodies[0].rows)
+/**
+ * Runs inside the page via scripting.executeScript, so it must be fully
+ * self-contained (no imports or references to the outer scope).
+ *
+ * With `targetIndex === null` it summarizes every table on the page;
+ * otherwise it returns the full contents of that table. Both modes share the
+ * same table discovery and header/row logic, so previews, indices and the
+ * extracted data always agree.
+ */
+function readTablesInPage(targetIndex: number | null): TableInfo[] | TableData | null {
+  // innerText matches what the user sees: it skips hidden elements and keeps
+  // <br>/block boundaries as line breaks, where textContent would glue
+  // "Line 1<br>Line 2" into "Line 1Line 2".
+  const cellText = (cell: HTMLTableCellElement) => cell.innerText.trim()
+
+  const splitRows = (table: HTMLTableElement) => {
+    const headerRow = table.tHead?.rows[0] ?? table.rows[0] ?? null
+    // Read every <tbody>, not only the first one.
+    const rows = table.tBodies.length > 0
+      ? Array.from(table.tBodies).flatMap((body) => Array.from(body.rows))
       : Array.from(table.rows)
-    const bodyRows = allRows.filter((row) => row !== headerRow)
-    const firstRow = bodyRows[0] ? Array.from(bodyRows[0].cells).map(getCellText) : []
-    return {
-      index,
-      rows: bodyRows.length,
-      cols: headers.length || firstRow.length,
-      headerPreview: headers.slice(0, 5),
-      firstRowPreview: firstRow.slice(0, 5),
-    }
-  })
+    return { headerRow, bodyRows: rows.filter((row) => row !== headerRow) }
+  }
+
+  const tables = Array.from(document.querySelectorAll('table')).filter((t) => t.rows.length > 0)
+
+  if (targetIndex === null) {
+    return tables.map((table, index) => {
+      const { headerRow, bodyRows } = splitRows(table)
+      const headers = headerRow ? Array.from(headerRow.cells, cellText) : []
+      const firstRow = bodyRows[0] ? Array.from(bodyRows[0].cells, cellText) : []
+      return {
+        index,
+        rows: bodyRows.length,
+        cols: bodyRows.reduce((max, row) => Math.max(max, row.cells.length), headers.length),
+        headerPreview: headers.slice(0, 5),
+        firstRowPreview: firstRow.slice(0, 5),
+      }
+    })
+  }
+
+  const table = tables[targetIndex]
+  if (!table) return null
+  const { headerRow, bodyRows } = splitRows(table)
+  return {
+    headers: headerRow ? Array.from(headerRow.cells, cellText) : [],
+    rows: bodyRows.map((row) => Array.from(row.cells, cellText)),
+  }
 }
 
-function extractTableInPage(tableIndex: number): TableData | null {
-  const tables = Array.from(document.querySelectorAll('table')).filter(
-    (t) => t.rows.length > 0,
-  )
-  const table = tables[tableIndex]
-  if (!table) return null
-
-  const getCellText = (cell: HTMLTableCellElement) => (cell.textContent ?? '').trim()
-  const headerRow = (table.querySelector('thead tr') as HTMLTableRowElement | null) ?? table.rows[0]
-  const headers = headerRow ? Array.from(headerRow.cells).map(getCellText) : []
-  const allRows = table.querySelector('tbody')
-    ? Array.from(table.tBodies[0].rows)
-    : Array.from(table.rows)
-  const bodyRows = allRows.filter((row) => row !== headerRow)
-  const rows = bodyRows.map((row) => Array.from(row.cells).map(getCellText))
-  return { headers, rows }
+async function readTables<T>(tabId: number, targetIndex: number | null): Promise<T | null> {
+  const results = await browser.scripting.executeScript({
+    target: { tabId },
+    func: readTablesInPage,
+    args: [targetIndex],
+  })
+  return (results?.[0]?.result as T | undefined) ?? null
 }
 
 export function useTableExtractor() {
@@ -57,7 +75,14 @@ export function useTableExtractor() {
   const [error, setError] = useState<string | null>(null)
   const [accessBlocked, setAccessBlocked] = useState(false)
 
+  // Only the latest scan / selection may update state, so a slow response
+  // can't overwrite the result of a newer click.
+  const scanRequest = useRef(0)
+  const selectRequest = useRef(0)
+
   const scanTables = useCallback(async () => {
+    const request = ++scanRequest.current
+    selectRequest.current++
     setLoading(true)
     setError(null)
     setAccessBlocked(false)
@@ -66,45 +91,39 @@ export function useTableExtractor() {
     try {
       const tabId = await getActiveTabId()
       if (!tabId) {
-        setError('No active tab found')
+        if (request === scanRequest.current) setError('No active tab found')
         return
       }
-      const results = await browser.scripting.executeScript({
-        target: { tabId },
-        func: scanTablesInPage,
-      })
-      const infos = results?.[0]?.result
+      const infos = await readTables<TableInfo[]>(tabId, null)
+      if (request !== scanRequest.current) return
       if (Array.isArray(infos)) {
         setTables(infos)
       } else {
         setError('Could not scan the page for tables.')
       }
     } catch {
-      setAccessBlocked(true)
+      if (request === scanRequest.current) setAccessBlocked(true)
     } finally {
-      setLoading(false)
+      if (request === scanRequest.current) setLoading(false)
     }
   }, [])
 
   const selectTable = useCallback(async (index: number) => {
+    const request = ++selectRequest.current
     setSelectedIndex(index)
     setError(null)
     try {
       const tabId = await getActiveTabId()
       if (!tabId) return
-      const results = await browser.scripting.executeScript({
-        target: { tabId },
-        func: extractTableInPage,
-        args: [index],
-      })
-      const data = results?.[0]?.result
+      const data = await readTables<TableData>(tabId, index)
+      if (request !== selectRequest.current) return
       if (data) {
         setTableData(data)
       } else {
         setError('Could not extract table data')
       }
     } catch {
-      setError('Could not extract table data')
+      if (request === selectRequest.current) setError('Could not extract table data')
     }
   }, [])
 

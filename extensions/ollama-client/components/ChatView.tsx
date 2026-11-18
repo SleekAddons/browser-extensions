@@ -51,6 +51,16 @@ function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4)
 }
 
+/** Read a file as base64 without the data URI prefix (e.g. "data:image/png;base64,"). */
+function readAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '')
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
 function formatTokenCount(tokens: number): string {
   if (tokens >= 1000) return `${(tokens / 1000).toFixed(1)}k`
   return String(tokens)
@@ -214,39 +224,35 @@ export default function ChatView(props: ChatViewProps) {
 
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files) return
+    const fileInput = e.target
+    const files = Array.from(fileInput.files ?? [])
+    // Reset file input so the same file can be re-selected
+    fileInput.value = ''
 
     const newAttachments: FileAttachment[] = []
-    for (const file of Array.from(files)) {
+    for (const file of files) {
       const attachment: FileAttachment = {
         name: file.name,
         type: file.type,
         size: file.size,
       }
 
-      if (file.type.startsWith('image/')) {
-        const base64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader()
-          reader.onload = () => {
-            const result = reader.result as string
-            // Strip the data URI prefix (e.g. "data:image/png;base64,")
-            resolve(result.split(',')[1])
-          }
-          reader.readAsDataURL(file)
-        })
-        attachment.base64 = base64
-      } else {
-        const text = await file.text()
-        attachment.textContent = text
+      try {
+        if (file.type.startsWith('image/')) {
+          attachment.base64 = await readAsBase64(file)
+        } else {
+          attachment.textContent = await file.text()
+        }
+      } catch {
+        continue // Skip files that can't be read
       }
 
       newAttachments.push(attachment)
     }
 
-    setAttachments((prev) => [...prev, ...newAttachments])
-    // Reset file input so the same file can be re-selected
-    e.target.value = ''
+    if (newAttachments.length > 0) {
+      setAttachments((prev) => [...prev, ...newAttachments])
+    }
   }
 
   const removeAttachment = (index: number) => {
@@ -315,7 +321,7 @@ export default function ChatView(props: ChatViewProps) {
             key={c.id}
             className={`flex items-center justify-between rounded-md border px-3 py-2 cursor-pointer transition-colors ${
               c.id === conversation?.id
-                ? 'border-primary/40 bg-primary/10 shadow-[inset_3px_0_0_hsl(var(--primary))]'
+                ? 'border-primary/40 bg-primary/10 shadow-[inset_3px_0_0_var(--primary)]'
                 : 'hover:bg-muted/50'
             }`}
             onClick={() => { onSelectConversation(c.id); setShowHistory(false) }}
@@ -533,7 +539,7 @@ export default function ChatView(props: ChatViewProps) {
         <Popover open={globalPopoverOpen}>
           <PopoverAnchor asChild>
             <Button
-              variant={globalExceedsLimit ? 'warning' : 'outline'}
+              variant={globalExceedsLimit ? 'destructive' : 'outline'}
               size="sm"
               className="shrink-0 gap-1.5 tabular-nums"
               disabled={chatDisabled}

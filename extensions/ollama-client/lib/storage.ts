@@ -147,7 +147,8 @@ export async function removeCommand(id: string): Promise<ChatCommand[]> {
 /** Load chat options from storage. */
 export async function loadChatOptions(): Promise<ChatOptions> {
   const result = await browser.storage.local.get(CHAT_OPTIONS_KEY)
-  return (result[CHAT_OPTIONS_KEY] as ChatOptions | undefined) ?? { ...DEFAULT_CHAT_OPTIONS }
+  // Merge so options added in later versions get their defaults
+  return { ...DEFAULT_CHAT_OPTIONS, ...(result[CHAT_OPTIONS_KEY] as Partial<ChatOptions> | undefined) }
 }
 
 /** Save chat options to storage. */

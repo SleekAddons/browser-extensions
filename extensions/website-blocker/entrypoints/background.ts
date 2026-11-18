@@ -1,8 +1,14 @@
 import { browser } from 'wxt/browser'
+import { defineBackground } from 'wxt/utils/define-background'
+import { cleanPattern } from '../lib/patterns'
+import { isScheduleActive } from '../lib/schedule'
+import { elapsedTrackingSeconds, todayStr } from '../lib/usage'
 
 const SETTINGS_KEY = 'wb_settings'
 const USAGE_KEY = 'wb_usage'
 const TRACKING_KEY = 'wb_tracking'
+/** Flag in storage.session, which the browser clears when it exits */
+const BROWSER_SESSION_KEY = 'wb_browser_session'
 
 interface StoredRule {
   id: string
@@ -49,18 +55,24 @@ interface TrackingState {
   tabId?: number
 }
 
-function todayStr(): string {
-  return new Date().toISOString().slice(0, 10)
+type BlockReason = 'blocked' | 'schedule' | 'limit' | 'allowlist'
+
+/** Base URL of the block page. */
+function blockedPageBase(): string {
+  return `${browser.runtime.getURL('/')}blocked.html`
 }
 
-function cleanPattern(raw: string, autoIdentifyWww = true): string {
-  return raw
-    .replace(/^https?:\/\//, '')
-    .replace(/\/.*$/, '')
-    .replace(/^\*\./, '')
-    .replace(/^www\./i, autoIdentifyWww ? '' : 'www.')
-    .trim()
-    .toLowerCase()
+function blockedPageUrl(domain: string, reason: BlockReason): string {
+  return `${blockedPageBase()}?domain=${encodeURIComponent(domain)}&reason=${reason}`
+}
+
+function redirectRule(id: number, priority: number, regexFilter: string, domain: string, reason: BlockReason) {
+  return {
+    id,
+    priority,
+    action: { type: 'redirect', redirect: { url: blockedPageUrl(domain, reason) } },
+    condition: { regexFilter, resourceTypes: ['main_frame'] },
+  }
 }
 
 function escapeRegex(input: string): string {
@@ -83,10 +95,6 @@ function isDomainInSchedule(domain: string, schedules: StoredSchedule[]): Schedu
   const active = schedules.filter((s) => s.enabled)
   if (active.length === 0) return { active: true, reason: 'blocked' } // no schedules → always active
 
-  const now = new Date()
-  const day = now.getDay()
-  const mins = now.getHours() * 60 + now.getMinutes()
-
   // Schedules that apply to this domain (either no patterns = global, or pattern matches)
   const applicable = active.filter(
     (s) => !s.patterns || s.patterns.length === 0 || s.patterns.includes(domain),
@@ -94,20 +102,10 @@ function isDomainInSchedule(domain: string, schedules: StoredSchedule[]): Schedu
 
   if (applicable.length === 0) return { active: true, reason: 'blocked' } // no applicable schedules → always active
 
-  const inWindow = applicable.some((s) => {
-    if (!s.days.includes(day)) return false
-    const [sh, sm] = s.startTime.split(':').map(Number)
-    const [eh, em] = s.endTime.split(':').map(Number)
-    const start = sh * 60 + sm
-    const end = eh * 60 + em
-    // Handle overnight schedules (e.g. 22:00 → 06:00)
-    if (start > end) {
-      return mins >= start || mins <= end
-    }
-    return mins >= start && mins <= end
-  })
-
-  return inWindow ? { active: true, reason: 'schedule' } : { active: false }
+  const now = new Date()
+  return applicable.some((s) => isScheduleActive(s, now))
+    ? { active: true, reason: 'schedule' }
+    : { active: false }
 }
 
 /** Check whether a domain has exceeded its daily time limit. */
@@ -126,7 +124,7 @@ function isDomainOverLimit(
 
   // Include un-flushed tracking time for the currently tracked domain
   if (tracking && tracking.domain === domain) {
-    totalSeconds += Math.floor((Date.now() - tracking.startedAt) / 1000)
+    totalSeconds += elapsedTrackingSeconds(tracking.startedAt)
   }
 
   return totalSeconds >= limit.dailyMinutes * 60
@@ -157,20 +155,7 @@ function buildDynamicRules(
       // Sites without a time limit: block based on schedule (always if no schedules)
       if ((scheduleResult.active && !hasActiveLimit) || overLimit) {
         const reason = overLimit ? 'limit' : scheduleResult.active ? scheduleResult.reason : 'blocked'
-        addRules.push({
-          id: ruleId++,
-          priority: 1,
-          action: {
-            type: 'redirect',
-            redirect: {
-              url: browser.runtime.getURL(`/blocked.html?domain=${encodeURIComponent(rule.pattern)}&reason=${reason}`),
-            },
-          },
-          condition: {
-            regexFilter,
-            resourceTypes: ['main_frame'],
-          },
-        })
+        addRules.push(redirectRule(ruleId++, 1, regexFilter, rule.pattern, reason))
       }
     }
   } else {
@@ -186,7 +171,7 @@ function buildDynamicRules(
         priority: 1,
         action: {
           type: 'redirect',
-          redirect: { url: browser.runtime.getURL('/blocked.html?domain=not-allowed&reason=allowlist') },
+          redirect: { url: blockedPageUrl('not-allowed', 'allowlist') },
         },
         condition: {
           urlFilter: '*',
@@ -198,8 +183,11 @@ function buildDynamicRules(
         const regexFilter = buildRuleRegex(rule)
         if (!regexFilter) continue
 
-        const overLimit = isDomainOverLimit(rule.pattern, limits, usage, tracking)
-        if (!overLimit) {
+        // Allowed sites that used up their time limit get the "limit" page
+        // rather than falling through to the generic "not allowed" one.
+        if (isDomainOverLimit(rule.pattern, limits, usage, tracking)) {
+          addRules.push(redirectRule(ruleId++, 2, regexFilter, rule.pattern, 'limit'))
+        } else {
           addRules.push({
             id: ruleId++,
             priority: 2,
@@ -218,22 +206,8 @@ function buildDynamicRules(
         const regexFilter = buildRuleRegex(rule)
         if (!regexFilter) continue
 
-        const overLimit = isDomainOverLimit(rule.pattern, limits, usage, tracking)
-        if (overLimit) {
-          addRules.push({
-            id: ruleId++,
-            priority: 1,
-            action: {
-              type: 'redirect',
-              redirect: {
-                url: browser.runtime.getURL(`/blocked.html?domain=${encodeURIComponent(rule.pattern)}&reason=limit`),
-              },
-            },
-            condition: {
-              regexFilter,
-              resourceTypes: ['main_frame'],
-            },
-          })
+        if (isDomainOverLimit(rule.pattern, limits, usage, tracking)) {
+          addRules.push(redirectRule(ruleId++, 1, regexFilter, rule.pattern, 'limit'))
         }
       }
     }
@@ -243,42 +217,58 @@ function buildDynamicRules(
 }
 
 let blockingQueue: Promise<void> = Promise.resolve()
+let blockingUpdateQueued = false
 
-function queueBlockingUpdate(task: () => Promise<void>): Promise<void> {
+/**
+ * Rebuild all declarativeNetRequest dynamic rules from current settings.
+ *
+ * Most events trigger this more than once (the event handler and the
+ * storage change caused by the tracking flush). Calls made while an update
+ * is still waiting to start are merged into it: the update reads storage
+ * when it starts, so it already sees everything those calls would have.
+ */
+function updateBlockingRules(): Promise<void> {
+  if (blockingUpdateQueued) return blockingQueue
+  blockingUpdateQueued = true
+  const task = async () => {
+    blockingUpdateQueued = false
+    try {
+      await rebuildBlockingRules()
+    } catch (err) {
+      console.error('[website-blocker] Failed to update blocking rules', err)
+    }
+  }
   blockingQueue = blockingQueue.then(task, task)
   return blockingQueue
 }
 
-/** Rebuild all declarativeNetRequest dynamic rules from current settings. */
-async function updateBlockingRules() {
-  await queueBlockingUpdate(async () => {
-    const result = await browser.storage.local.get([SETTINGS_KEY, USAGE_KEY, TRACKING_KEY])
-    const settings = result[SETTINGS_KEY] as StoredSettings | undefined
-    const usage = (result[USAGE_KEY] as DailyUsage | undefined) ?? {}
-    const tracking = (result[TRACKING_KEY] as TrackingState | undefined) ?? null
+async function rebuildBlockingRules(): Promise<void> {
+  const result = await browser.storage.local.get([SETTINGS_KEY, USAGE_KEY, TRACKING_KEY])
+  const settings = result[SETTINGS_KEY] as StoredSettings | undefined
+  const usage = (result[USAGE_KEY] as DailyUsage | undefined) ?? {}
+  const tracking = (result[TRACKING_KEY] as TrackingState | undefined) ?? null
 
-    const addRules = settings?.enabled ? buildDynamicRules(settings, usage, tracking) : []
+  const addRules = settings?.enabled ? buildDynamicRules(settings, usage, tracking) : []
 
-    // Apply declarativeNetRequest rules (best-effort).
-    // Firefox MV2 may not fully support the redirect action type depending on
-    // browser version; failures here must not prevent tab-based enforcement.
-    try {
-      const existing = await browser.declarativeNetRequest.getDynamicRules()
-      const removeRuleIds = existing.map((r) => r.id)
-      await browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules })
-    } catch {
-      // declarativeNetRequest unavailable or unsupported action — continue
-    }
+  // Apply declarativeNetRequest rules (best-effort).
+  // Firefox MV2 may not fully support the redirect action type depending on
+  // browser version; failures here must not prevent tab-based enforcement.
+  try {
+    const existing = await browser.declarativeNetRequest.getDynamicRules()
+    const removeRuleIds = existing.map((r) => r.id)
+    await browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules })
+  } catch {
+    // declarativeNetRequest unavailable or unsupported action — continue
+  }
 
-    // Always enforce blocking on currently open tabs regardless of
-    // whether declarativeNetRequest succeeded. This is the primary
-    // enforcement mechanism for already-loaded pages and acts as a
-    // fallback for browsers where declarativeNetRequest redirect is
-    // not fully supported (e.g. older Firefox versions).
-    if (settings?.enabled) {
-      await enforceBlockingOnOpenTabs(settings, usage, tracking)
-    }
-  })
+  // Always enforce blocking on currently open tabs regardless of
+  // whether declarativeNetRequest succeeded. This is the primary
+  // enforcement mechanism for already-loaded pages and acts as a
+  // fallback for browsers where declarativeNetRequest redirect is
+  // not fully supported (e.g. older Firefox versions).
+  if (settings?.enabled) {
+    await enforceBlockingOnOpenTabs(settings, usage, tracking)
+  }
 }
 
 // ── Usage tracking ─────────────────────────────────────────
@@ -314,29 +304,16 @@ function domainMatchesRule(domain: string, rules: StoredRule[]): StoredRule | un
 
 function getAllowlistEnforcementState(schedules: StoredSchedule[]): boolean {
   const activeSchedules = schedules.filter((s) => s.enabled)
-  const hasSchedules = activeSchedules.length > 0
-
-  if (!hasSchedules) return true
+  if (activeSchedules.length === 0) return true
 
   const now = new Date()
-  const day = now.getDay()
-  const mins = now.getHours() * 60 + now.getMinutes()
-
-  return activeSchedules.some((s) => {
-    if (!s.days.includes(day)) return false
-    const [sh, sm] = s.startTime.split(':').map(Number)
-    const [eh, em] = s.endTime.split(':').map(Number)
-    const start = sh * 60 + sm
-    const end = eh * 60 + em
-    if (start > end) return mins >= start || mins <= end
-    return mins >= start && mins <= end
-  })
+  return activeSchedules.some((s) => isScheduleActive(s, now))
 }
 
 interface BlockDecision {
   blocked: boolean
   domain?: string
-  reason?: 'blocked' | 'schedule' | 'limit' | 'allowlist'
+  reason?: BlockReason
 }
 
 function evaluateTabBlocking(
@@ -409,7 +386,7 @@ async function enforceBlockingOnOpenTabs(
   tracking: TrackingState | null,
 ): Promise<void> {
   const tabs = await browser.tabs.query({})
-  const blockedPrefix = browser.runtime.getURL('/blocked.html')
+  const blockedPrefix = blockedPageBase()
 
   await Promise.all(
     tabs.map(async (tab) => {
@@ -422,9 +399,7 @@ async function enforceBlockingOnOpenTabs(
       const decision = evaluateTabBlocking(domain, settings, usage, tracking)
       if (!decision.blocked || !decision.reason || !decision.domain) return
 
-      const target = browser.runtime.getURL(
-        `/blocked.html?domain=${encodeURIComponent(decision.domain)}&reason=${decision.reason}`,
-      )
+      const target = blockedPageUrl(decision.domain, decision.reason)
 
       try {
         await browser.tabs.update(tab.id, { url: target })
@@ -451,6 +426,29 @@ function resolveTrackableDomain(domain: string, settings?: StoredSettings): stri
   return matchedRule.pattern
 }
 
+let browserSessionChecked = false
+
+/**
+ * True for the first tracking flush after the browser starts. The tracking
+ * state lives in storage.local, so after a restart it still points at the
+ * site that was open when the browser closed, and that interval must be
+ * dropped instead of counted. storage.session is cleared when the browser
+ * exits, which tells a browser restart apart from a service worker restart.
+ */
+async function isFirstFlushOfBrowserSession(): Promise<boolean> {
+  if (browserSessionChecked) return false
+  browserSessionChecked = true
+  const area = browser.storage.session
+  if (!area) return false
+  try {
+    if ((await area.get(BROWSER_SESSION_KEY))[BROWSER_SESSION_KEY]) return false
+    await area.set({ [BROWSER_SESSION_KEY]: true })
+    return true
+  } catch {
+    return false
+  }
+}
+
 /**
  * Flush elapsed tracking time and set the next tracking state.
  * Serialized via queueTrackingUpdate to prevent concurrent storage races.
@@ -468,9 +466,10 @@ async function flushAndTrackTarget(next: NextTrackingTarget | null): Promise<voi
     : null
 
   const today = todayStr()
+  const staleInterval = await isFirstFlushOfBrowserSession()
 
-  if (tracking && settings?.enabled) {
-    const elapsed = Math.floor((Date.now() - tracking.startedAt) / 1000)
+  if (tracking && settings?.enabled && !staleInterval) {
+    const elapsed = elapsedTrackingSeconds(tracking.startedAt)
     if (elapsed > 0) {
       const existing = usage[tracking.domain]
       if (existing && existing.date === today) {
@@ -593,7 +592,11 @@ function scheduleLimitCheck(
 async function updateTracking(): Promise<void> {
   await queueTrackingUpdate(async () => {
     try {
-      const [activeTab] = await browser.tabs.query({ active: true, lastFocusedWindow: true })
+      const [lastActiveTab] = await browser.tabs.query({ active: true, lastFocusedWindow: true })
+      // Only count time while a browser window has focus: the last focused
+      // window keeps its active tab when the user switches to another app.
+      const focused = lastActiveTab ? (await browser.windows.get(lastActiveTab.windowId)).focused : false
+      const activeTab = focused ? lastActiveTab : undefined
       const activeTabId = typeof activeTab?.id === 'number' ? activeTab.id : null
       const activeDomain = activeTab?.url ? extractDomain(activeTab.url) : null
 
@@ -627,9 +630,11 @@ async function updateTracking(): Promise<void> {
 }
 
 export default defineBackground(() => {
-  // Apply rules on service worker startup
-  updateBlockingRules()
+  // On startup, settle the tracking state first so the first rule build
+  // doesn't count a stale interval from before the browser was closed.
   updateTracking()
+    .catch(() => {})
+    .then(() => updateBlockingRules())
 
   // Re-apply whenever settings, usage, or tracking state change.
   // Including TRACKING_KEY guarantees enforcement runs after every
@@ -663,7 +668,7 @@ export default defineBackground(() => {
   // Track window focus changes
   browser.windows.onFocusChanged.addListener((windowId) => {
     if (windowId === browser.windows.WINDOW_ID_NONE) {
-      // All windows lost focus — flush tracking
+      // All windows lost focus — flush and pause tracking
       updateTracking()
     } else {
       updateTracking().then(() => updateBlockingRules())

@@ -18,6 +18,7 @@ import EmptyState from '@/components/EmptyState'
 import ItemCounter from '@/components/ItemCounter'
 import { useScrollable } from '@/lib/useScrollable'
 import type { BlockRule, DailyUsage, TimeLimit, TrackingState } from '../lib/types'
+import { elapsedTrackingSeconds, todayStr } from '../lib/usage'
 
 interface LimitsTabProps {
   limits: TimeLimit[]
@@ -172,7 +173,7 @@ export default function LimitsTab({
     setEditingId(null)
   }
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayStr()
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
@@ -327,7 +328,7 @@ export default function LimitsTab({
               // Add un-flushed live tracking seconds
               const liveExtra =
                 tracking && tracking.domain === limit.pattern
-                  ? Math.floor((Date.now() - tracking.startedAt) / 1000)
+                  ? elapsedTrackingSeconds(tracking.startedAt)
                   : 0
               const totalSeconds = storedSeconds + liveExtra
               const limitSeconds = limit.dailyMinutes * 60

@@ -26,7 +26,7 @@ interface EndpointCardProps {
 
 export default function EndpointCard(props: EndpointCardProps) {
   const { state, isActive, onSelect, onRefresh, onEdit, onDelete } = props
-  const { endpoint, models, connected, loading } = state
+  const { endpoint, models, connected, loading, error } = state
 
   return (
     <ContentCard
@@ -69,6 +69,7 @@ export default function EndpointCard(props: EndpointCardProps) {
         <Alert variant="destructive">
           <AlertDescription>
             Unable to connect. Check that Ollama is running at {endpoint.baseUrl}.
+            {error && <span className="mt-1 block font-mono text-xs opacity-80">{error}</span>}
           </AlertDescription>
         </Alert>
       )}

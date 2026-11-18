@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser'
 import type { BlockerSettings, BlockStats, DailyUsage, TrackingState } from './types'
 import { DEFAULT_SETTINGS } from './types'
+import { todayStr } from './usage'
 
 const SETTINGS_KEY = 'wb_settings'
 const STATS_KEY = 'wb_stats'
@@ -54,10 +55,6 @@ export async function clearStats(): Promise<void> {
 }
 
 // ── Daily Usage ──────────────────────────────────────────
-
-function todayStr(): string {
-  return new Date().toISOString().slice(0, 10)
-}
 
 export async function loadUsage(): Promise<DailyUsage> {
   const result = await browser.storage.local.get(USAGE_KEY)

@@ -10,7 +10,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { TriangleAlert } from 'lucide-react'
 
 interface DeleteDialogProps {
   /** The trigger element that opens the dialog */
@@ -54,7 +53,6 @@ export default function DeleteDialog(props: DeleteDialogProps) {
       <AlertDialogContent size="sm">
         <AlertDialogHeader>
           <div className="mb-1 flex items-center gap-2 text-destructive">
-            {/* <TriangleAlert size={18} /> */}
             <AlertDialogTitle className="break-all">
               {resolvedTitle}
             </AlertDialogTitle>

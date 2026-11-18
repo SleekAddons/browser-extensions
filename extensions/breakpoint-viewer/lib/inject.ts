@@ -34,15 +34,27 @@ export async function injectBadge(settings: BadgeSettings) {
 }
 
 /**
- * Runs in the page context via chrome.scripting.executeScript.
- * Must be self-contained - no imports or closures.
+ * Creates, updates or removes the breakpoint badge.
+ *
+ * Used by the content script and injected by the popup through
+ * scripting.executeScript, so it must be self-contained: no imports and no
+ * references to the outer scope. Both callers run in the same isolated
+ * world, so the current breakpoints live on `window` and a single resize
+ * listener renders from there. That keeps the badge in sync after settings
+ * change and avoids stacking a new listener every time it is re-created.
  */
-function applyBadge(
+export function applyBadge(
   enabled: boolean,
   position: string,
   breakpoints: BreakpointConfig[],
 ) {
   const BADGE_ID = '__bp-viewer-badge__'
+  const scope = window as unknown as {
+    __bpViewer?: { breakpoints: BreakpointConfig[]; listening: boolean }
+  }
+  const state = scope.__bpViewer ?? (scope.__bpViewer = { breakpoints, listening: false })
+  state.breakpoints = breakpoints
+
   const existing = document.getElementById(BADGE_ID)
 
   if (!enabled) {
@@ -71,40 +83,37 @@ function applyBadge(
     'box-sizing:border-box!important;transform:none!important;' +
     'float:none!important;clear:none!important;'
 
+  const render = (el: HTMLElement) => {
+    const width = window.innerWidth
+    const sorted = [...state.breakpoints].sort((a, b) => b.minWidth - a.minWidth)
+    // Below the smallest min-width, fall back to the smallest breakpoint.
+    const bp = sorted.find((b) => width >= b.minWidth) ?? sorted[sorted.length - 1]
+    if (!bp) return
+    const r = parseInt(bp.color.slice(1, 3), 16)
+    const g = parseInt(bp.color.slice(3, 5), 16)
+    const b = parseInt(bp.color.slice(5, 7), 16)
+    const textColor = (r * 299 + g * 587 + b * 114) / 1000 > 150 ? '#000' : '#fff'
+    el.textContent = `${bp.name} ≥${bp.minWidth}px | ${width}px`
+    el.style.setProperty('background-color', bp.color + 'e6', 'important')
+    el.style.setProperty('color', textColor, 'important')
+    el.style.setProperty('border-color', textColor === '#fff' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)', 'important')
+  }
+
   const badge = existing ?? document.createElement('div')
   badge.id = BADGE_ID
   badge.setAttribute('style', baseStyle)
-
-  const width = window.innerWidth
-  const sorted = [...breakpoints].sort((a, b) => b.minWidth - a.minWidth)
-  const bp = sorted.find((b) => width >= b.minWidth) ?? breakpoints[0]
-  badge.textContent = `${bp.name} ≥${bp.minWidth}px | ${width}px`
-  badge.style.setProperty('background-color', bp.color + 'e6', 'important')
-  const txtColor = (r: number, g: number, b: number) => (r * 299 + g * 587 + b * 114) / 1000 > 150 ? '#000' : '#fff'
-  const toRgb = (hex: string) => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)] as const
-  const [r, g, b] = toRgb(bp.color)
-  badge.style.setProperty('color', txtColor(r, g, b), 'important')
-  badge.style.setProperty('border-color', txtColor(r, g, b) === '#fff' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)', 'important')
+  render(badge)
 
   if (!existing) {
-    document.body.appendChild(badge)
+    // XML/SVG documents have no <body>.
+    ;(document.body ?? document.documentElement).appendChild(badge)
+  }
 
-    // Tag the resize listener so we don't add duplicates
-    if (!(window as unknown as Record<string, boolean>).__bpViewerResize) {
-      (window as unknown as Record<string, boolean>).__bpViewerResize = true
-      window.addEventListener('resize', () => {
-        const el = document.getElementById(BADGE_ID)
-        if (!el) return
-        const w = window.innerWidth
-        const s = [...breakpoints].sort((a, b) => b.minWidth - a.minWidth)
-        const b = s.find((x) => w >= x.minWidth) ?? breakpoints[0]
-        el.textContent = `${b.name} ≥${b.minWidth}px | ${w}px`
-        el.style.setProperty('background-color', b.color + 'e6', 'important')
-        const [cr, cg, cb] = [parseInt(b.color.slice(1, 3), 16), parseInt(b.color.slice(3, 5), 16), parseInt(b.color.slice(5, 7), 16)]
-        const tc = (cr * 299 + cg * 587 + cb * 114) / 1000 > 150 ? '#000' : '#fff'
-        el.style.setProperty('color', tc, 'important')
-        el.style.setProperty('border-color', tc === '#fff' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)', 'important')
-      })
-    }
+  if (!state.listening) {
+    state.listening = true
+    window.addEventListener('resize', () => {
+      const el = document.getElementById(BADGE_ID)
+      if (el) render(el)
+    })
   }
 }

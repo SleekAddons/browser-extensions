@@ -93,11 +93,6 @@ export const DEFAULT_SETTINGS: BadgeSettings = {
   sitePatterns: [],
 }
 
-export function getCurrentBreakpoint(width: number, breakpoints: BreakpointConfig[]): BreakpointConfig {
-  const sorted = [...breakpoints].sort((a, b) => b.minWidth - a.minWidth)
-  return sorted.find((bp) => width >= bp.minWidth) ?? breakpoints[0]
-}
-
 export async function loadSettings(): Promise<BadgeSettings> {
   const result = await browser.storage.local.get('bpViewerSettings')
   if (!result.bpViewerSettings) {

@@ -91,7 +91,8 @@ export interface DomainStatus {
 /** State for a connected Pi-hole instance */
 export interface PiholeInstanceState {
   instance: PiholeInstance
-  session: PiholeSession | null
+  /** API session ID; null until authenticated */
+  sid: string | null
   summary: PiholeSummary | null
   blocking: PiholeBlockingStatus | null
   history: PiholeHistoryEntry[] | null

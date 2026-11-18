@@ -47,6 +47,13 @@ export default defineConfig({
     return manifest
   },
   hooks: {
+    'build:publicAssets'(_wxt, files) {
+      // Store-listing promo tiles live next to the icons in public/ but are
+      // never used at runtime, so keep them out of the extension package.
+      for (let i = files.length - 1; i >= 0; i--) {
+        if (/^promo-[^/]*\.png$/.test(files[i].relativeDest)) files.splice(i, 1)
+      }
+    },
     'build:manifestGenerated'(_wxt, manifest) {
       // Prevent Firefox from injecting its extension.css into the sidebar.
       // The injected stylesheet uses an anonymous @layer that outranks

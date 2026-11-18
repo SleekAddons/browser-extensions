@@ -1,7 +1,7 @@
 /**
  * Ollama API client.
  *
- * Handles model listing, connection testing, and streaming chat completions.
+ * Handles model listing and streaming chat completions.
  */
 
 import type { OllamaModel, ChatMessage, OllamaChatChunk, OllamaTokenUsage } from './types'
@@ -17,23 +17,15 @@ function authHeaders(authToken?: string): Record<string, string> {
   return { Authorization: `Bearer ${authToken}` }
 }
 
-/** Check if an Ollama server is reachable. */
-export async function checkConnection(baseUrl: string, authToken?: string): Promise<boolean> {
-  try {
-    const res = await fetch(apiUrl(baseUrl, '/api/tags'), {
-      headers: authHeaders(authToken),
-      signal: AbortSignal.timeout(5000),
-    })
-    return res.ok
-  } catch {
-    return false
-  }
-}
-
 /** Fetch all available models from an Ollama endpoint. */
-export async function listModels(baseUrl: string, authToken?: string): Promise<OllamaModel[]> {
+export async function listModels(
+  baseUrl: string,
+  authToken?: string,
+  signal?: AbortSignal,
+): Promise<OllamaModel[]> {
   const res = await fetch(apiUrl(baseUrl, '/api/tags'), {
     headers: authHeaders(authToken),
+    signal,
   })
 
   if (!res.ok) {
@@ -89,7 +81,10 @@ export async function streamChat(
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(`Chat request failed (${res.status}): ${text}`)
+    // Ollama reports errors as {"error": "..."}
+    let detail = text
+    try { detail = JSON.parse(text).error ?? text } catch { /* not JSON */ }
+    throw new Error(`Chat request failed (${res.status})${detail ? `: ${detail}` : ''}`)
   }
 
   if (!res.body) {
@@ -100,92 +95,57 @@ export async function streamChat(
   const decoder = new TextDecoder()
   let buffer = ''
   let tokenUsage: OllamaTokenUsage | null = null
+  let finished = false
+
+  // Ollama sends newline-delimited JSON. Errors that happen after streaming
+  // has started (e.g. the model runs out of memory) arrive as {"error": ...}.
+  const handleLine = (line: string) => {
+    const trimmed = line.trim()
+    if (!trimmed) return
+    let chunk: OllamaChatChunk
+    try {
+      chunk = JSON.parse(trimmed) as OllamaChatChunk
+    } catch {
+      return // Skip malformed lines
+    }
+    if (chunk.error) throw new Error(chunk.error)
+    onChunk(chunk)
+
+    // Capture token usage from the final chunk
+    if (chunk.done && chunk.prompt_eval_count != null) {
+      tokenUsage = {
+        promptTokens: chunk.prompt_eval_count,
+        completionTokens: chunk.eval_count ?? 0,
+        totalDuration: chunk.total_duration ?? 0,
+        promptEvalDuration: chunk.prompt_eval_duration ?? 0,
+        evalDuration: chunk.eval_duration ?? 0,
+      }
+    }
+  }
 
   try {
     while (true) {
       const { done, value } = await reader.read()
-      if (done) break
+      if (done) {
+        finished = true
+        break
+      }
 
       buffer += decoder.decode(value, { stream: true })
-
-      // Ollama sends newline-delimited JSON
       const lines = buffer.split('\n')
       // Keep the last potentially incomplete line in the buffer
       buffer = lines.pop() ?? ''
-
-      for (const line of lines) {
-        const trimmed = line.trim()
-        if (!trimmed) continue
-
-        try {
-          const chunk = JSON.parse(trimmed) as OllamaChatChunk
-          onChunk(chunk)
-
-          // Capture token usage from the final chunk
-          if (chunk.done && chunk.prompt_eval_count != null) {
-            tokenUsage = {
-              promptTokens: chunk.prompt_eval_count ?? 0,
-              completionTokens: chunk.eval_count ?? 0,
-              totalDuration: chunk.total_duration ?? 0,
-              promptEvalDuration: chunk.prompt_eval_duration ?? 0,
-              evalDuration: chunk.eval_duration ?? 0,
-            }
-          }
-        } catch {
-          // Skip malformed lines
-        }
-      }
+      lines.forEach(handleLine)
     }
 
     // Process any remaining buffer
-    if (buffer.trim()) {
-      try {
-        const chunk = JSON.parse(buffer.trim()) as OllamaChatChunk
-        onChunk(chunk)
-
-        if (chunk.done && chunk.prompt_eval_count != null) {
-          tokenUsage = {
-            promptTokens: chunk.prompt_eval_count ?? 0,
-            completionTokens: chunk.eval_count ?? 0,
-            totalDuration: chunk.total_duration ?? 0,
-            promptEvalDuration: chunk.prompt_eval_duration ?? 0,
-            evalDuration: chunk.eval_duration ?? 0,
-          }
-        }
-      } catch {
-        // Ignore
-      }
-    }
+    handleLine(buffer + decoder.decode())
   } finally {
-    reader.releaseLock()
+    // Stop the download if we bailed out early (error chunk, abort, exception)
+    if (!finished) await reader.cancel().catch(() => {})
   }
 
   return tokenUsage
-}
-
-/** Send a non-streaming chat request. */
-export async function chat(
-  baseUrl: string,
-  model: string,
-  messages: ChatMessage[],
-  authToken?: string,
-): Promise<ChatMessage> {
-  const res = await fetch(apiUrl(baseUrl, '/api/chat'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders(authToken) },
-    body: JSON.stringify({
-      model,
-      messages,
-      stream: false,
-    }),
-  })
-
-  if (!res.ok) {
-    throw new Error(`Chat request failed (${res.status})`)
-  }
-
-  const data = await res.json()
-  return data.message as ChatMessage
 }
 
 /** Format model size in human-readable form. */

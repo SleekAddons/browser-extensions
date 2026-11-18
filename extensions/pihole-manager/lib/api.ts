@@ -13,6 +13,14 @@ import type {
   DomainSearchResult,
 } from './types'
 
+/** Thrown when the Pi-hole rejects the session ID (HTTP 401). */
+export class SessionExpiredError extends Error {
+  constructor() {
+    super('Session expired')
+    this.name = 'SessionExpiredError'
+  }
+}
+
 function apiUrl(baseUrl: string, path: string): string {
   const base = baseUrl.replace(/\/+$/, '')
   return `${base}/api${path}`
@@ -31,6 +39,9 @@ export async function authenticate(
 
   if (!res.ok) {
     if (res.status === 401) throw new Error('Invalid password')
+    if (res.status === 429) {
+      throw new Error('Too many active API sessions on this Pi-hole. Wait for old sessions to expire, then refresh.')
+    }
     throw new Error(`Authentication failed (${res.status})`)
   }
 
@@ -55,7 +66,7 @@ export async function getSummary(
     headers: { 'X-FTL-SID': sid },
   })
 
-  if (res.status === 401) throw new Error('Session expired')
+  if (res.status === 401) throw new SessionExpiredError()
   if (!res.ok) throw new Error(`Failed to fetch summary (${res.status})`)
 
   return (await res.json()) as PiholeSummary
@@ -70,7 +81,7 @@ export async function getBlockingStatus(
     headers: { 'X-FTL-SID': sid },
   })
 
-  if (res.status === 401) throw new Error('Session expired')
+  if (res.status === 401) throw new SessionExpiredError()
   if (!res.ok) throw new Error(`Failed to fetch blocking status (${res.status})`)
 
   return (await res.json()) as PiholeBlockingStatus
@@ -85,7 +96,7 @@ export async function getHistory(
     headers: { 'X-FTL-SID': sid },
   })
 
-  if (res.status === 401) throw new Error('Session expired')
+  if (res.status === 401) throw new SessionExpiredError()
   if (!res.ok) throw new Error(`Failed to fetch history (${res.status})`)
 
   const data = await res.json()
@@ -111,7 +122,7 @@ export async function setBlocking(
     body: JSON.stringify(body),
   })
 
-  if (res.status === 401) throw new Error('Session expired')
+  if (res.status === 401) throw new SessionExpiredError()
   if (!res.ok) throw new Error(`Failed to set blocking (${res.status})`)
 
   return (await res.json()) as PiholeBlockingStatus
@@ -133,7 +144,7 @@ export async function addDomain(
     body: JSON.stringify({ domain }),
   })
 
-  if (res.status === 401) throw new Error('Session expired')
+  if (res.status === 401) throw new SessionExpiredError()
   if (!res.ok) {
     const data = await res.json().catch(() => null)
     const msg = data?.error?.message ?? `Failed to add domain (${res.status})`
@@ -151,7 +162,7 @@ export async function searchDomain(
     headers: { 'X-FTL-SID': sid },
   })
 
-  if (res.status === 401) throw new Error('Session expired')
+  if (res.status === 401) throw new SessionExpiredError()
   if (!res.ok) throw new Error(`Failed to search domain (${res.status})`)
 
   const data = await res.json()
@@ -176,19 +187,20 @@ export async function searchDomain(
   }
 }
 
-/** Remove a domain from the allow or deny list. */
+/** Remove an exact domain or a regex from the allow or deny list. */
 export async function removeDomain(
   baseUrl: string,
   sid: string,
   domain: string,
   type: 'allow' | 'deny',
+  kind: 'exact' | 'regex' = 'exact',
 ): Promise<void> {
-  const res = await fetch(apiUrl(baseUrl, `/domains/${type}/exact/${encodeURIComponent(domain)}`), {
+  const res = await fetch(apiUrl(baseUrl, `/domains/${type}/${kind}/${encodeURIComponent(domain)}`), {
     method: 'DELETE',
     headers: { 'X-FTL-SID': sid },
   })
 
-  if (res.status === 401) throw new Error('Session expired')
+  if (res.status === 401) throw new SessionExpiredError()
   if (res.status === 404) throw new Error('Domain not found in list')
   if (!res.ok) throw new Error(`Failed to remove domain (${res.status})`)
 }

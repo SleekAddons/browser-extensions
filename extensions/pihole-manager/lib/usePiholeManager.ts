@@ -1,12 +1,15 @@
 import { browser } from 'wxt/browser'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
+  DomainEntry,
+  PiholeBlockingStatus,
   PiholeInstance,
   PiholeInstanceState,
-  PiholeSession,
 } from './types'
 import {
+  SessionExpiredError,
   authenticate,
+  logout,
   getSummary,
   getBlockingStatus,
   setBlocking,
@@ -14,16 +17,49 @@ import {
   searchDomain,
   removeDomain,
 } from './api'
-import { loadInstances, addInstance, updateInstance, removeInstance } from './storage'
+import {
+  loadInstances,
+  addInstance,
+  updateInstance,
+  removeInstance,
+  loadSessionId,
+  saveSessionId,
+  clearSessionId,
+} from './storage'
+
+/** Minimum ms between manual refreshes for a single instance. */
+const REFRESH_COOLDOWN = 5_000
+
+/** A list entry that can be removed: an exact domain or a regex. */
+export type DomainRef = Pick<DomainEntry, 'domain' | 'type' | 'kind'>
 
 async function getActiveTabDomain(): Promise<string | null> {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true })
   if (!tab?.url) return null
   try {
-    return new URL(tab.url).hostname
+    const url = new URL(tab.url)
+    // Only web pages have a domain Pi-hole could resolve (not chrome://newtab etc.)
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.hostname : null
   } catch {
     return null
   }
+}
+
+/** Convert Pi-hole's remaining timer (seconds) into an absolute deadline. */
+function disabledUntilFrom(blocking: PiholeBlockingStatus): number | null {
+  return blocking.timer != null && blocking.timer > 0 ? Date.now() + blocking.timer * 1000 : null
+}
+
+async function fetchStatus(baseUrl: string, sid: string) {
+  const [summary, blocking] = await Promise.all([
+    getSummary(baseUrl, sid),
+    getBlockingStatus(baseUrl, sid),
+  ])
+  return { summary, blocking, disabledUntil: disabledUntilFrom(blocking) }
+}
+
+function errorMessage(err: unknown, fallback: string): string {
+  return err instanceof Error ? err.message : fallback
 }
 
 export function usePiholeManager() {
@@ -35,9 +71,6 @@ export function usePiholeManager() {
   // Keep a ref to states so effects/callbacks don't depend on the states value
   const statesRef = useRef(states)
   statesRef.current = states
-
-  /** Minimum ms between refreshes for a single instance. */
-  const REFRESH_COOLDOWN = 5_000
 
   /** Update the state for a specific instance. */
   const updateState = useCallback(
@@ -54,9 +87,14 @@ export function usePiholeManager() {
     [],
   )
 
-  /** Connect to a single instance: authenticate, fetch summary + blocking. */
+  /**
+   * Connect to a single instance and fetch summary + blocking status.
+   * Reuses the cached API session when there is one and only logs in again
+   * when Pi-hole has expired it, so opening the popup doesn't burn a new
+   * session seat every time.
+   */
   const connectInstance = useCallback(
-    async (instance: PiholeInstance) => {
+    async (instance: PiholeInstance, reuseSession = true) => {
       const id = instance.id
 
       // Initialize state entry
@@ -64,7 +102,7 @@ export function usePiholeManager() {
         const next = new Map(prev)
         next.set(id, {
           instance,
-          session: null,
+          sid: null,
           summary: null,
           blocking: null,
           history: null,
@@ -78,60 +116,65 @@ export function usePiholeManager() {
       })
 
       try {
-        const session = await authenticate(instance.baseUrl, instance.password)
-        if (!session.valid || !session.sid) {
-          updateState(id, { loading: false, error: 'Authentication failed' })
-          return
+        let sid = reuseSession ? await loadSessionId(instance) : null
+        let status: Awaited<ReturnType<typeof fetchStatus>> | null = null
+
+        if (sid) {
+          try {
+            status = await fetchStatus(instance.baseUrl, sid)
+          } catch (err) {
+            // The cached session expired: log in again below.
+            if (!(err instanceof SessionExpiredError)) throw err
+          }
         }
 
-        const [summary, blocking] = await Promise.all([
-          getSummary(instance.baseUrl, session.sid),
-          getBlockingStatus(instance.baseUrl, session.sid),
-        ])
+        if (!status) {
+          const session = await authenticate(instance.baseUrl, instance.password)
+          if (!session.valid || !session.sid) {
+            await clearSessionId(id)
+            updateState(id, { loading: false, error: 'Authentication failed' })
+            return
+          }
+          sid = session.sid
+          await saveSessionId(instance, sid)
+          status = await fetchStatus(instance.baseUrl, sid)
+        }
 
-        const disabledUntil = blocking.timer != null && blocking.timer > 0
-          ? Date.now() + blocking.timer * 1000
-          : null
-        updateState(id, { session, summary, blocking, loading: false, lastRefreshedAt: Date.now(), disabledUntil })
+        updateState(id, { sid, ...status, loading: false, lastRefreshedAt: Date.now() })
       } catch (err) {
-        updateState(id, {
-          loading: false,
-          error: err instanceof Error ? err.message : 'Connection failed',
-        })
+        updateState(id, { loading: false, error: errorMessage(err, 'Connection failed') })
       }
     },
     [updateState],
   )
 
-  /** Refresh data for an already-connected instance. */
+  /**
+   * Refresh data for an instance. Retries the connection if it isn't
+   * connected yet. `force` skips the cooldown (used by the re-enable timer).
+   */
   const refreshInstance = useCallback(
-    async (id: string) => {
+    async (id: string, force = false) => {
       const state = statesRef.current.get(id)
-      if (!state?.session?.sid) return
+      if (!state) return
+
+      if (!state.sid) {
+        if (!state.loading) await connectInstance(state.instance)
+        return
+      }
 
       // Cooldown: skip if last refresh was too recent
-      if (state.lastRefreshedAt && Date.now() - state.lastRefreshedAt < REFRESH_COOLDOWN) return
+      if (!force && state.lastRefreshedAt && Date.now() - state.lastRefreshedAt < REFRESH_COOLDOWN) return
 
       updateState(id, { loading: true, error: null })
 
       try {
-        const [summary, blocking] = await Promise.all([
-          getSummary(state.instance.baseUrl, state.session.sid),
-          getBlockingStatus(state.instance.baseUrl, state.session.sid),
-        ])
-        const disabledUntil = blocking.timer != null && blocking.timer > 0
-          ? Date.now() + blocking.timer * 1000
-          : null
-        updateState(id, { summary, blocking, loading: false, lastRefreshedAt: Date.now(), disabledUntil })
+        const status = await fetchStatus(state.instance.baseUrl, state.sid)
+        updateState(id, { ...status, loading: false, lastRefreshedAt: Date.now() })
       } catch (err) {
-        // If session expired, try re-authenticating
-        if (err instanceof Error && err.message === 'Session expired') {
-          await connectInstance(state.instance)
+        if (err instanceof SessionExpiredError) {
+          await connectInstance(state.instance, false)
         } else {
-          updateState(id, {
-            loading: false,
-            error: err instanceof Error ? err.message : 'Refresh failed',
-          })
+          updateState(id, { loading: false, error: errorMessage(err, 'Refresh failed') })
         }
       }
     },
@@ -142,7 +185,7 @@ export function usePiholeManager() {
   const toggleBlocking = useCallback(
     async (id: string, timer?: number) => {
       const state = statesRef.current.get(id)
-      if (!state?.session?.sid || !state.blocking) return
+      if (!state?.sid || !state.blocking) return
 
       const currentlyEnabled = state.blocking.blocking === 'enabled'
       updateState(id, { loading: true, error: null })
@@ -150,49 +193,23 @@ export function usePiholeManager() {
       try {
         const result = await setBlocking(
           state.instance.baseUrl,
-          state.session.sid,
+          state.sid,
           !currentlyEnabled,
           !currentlyEnabled ? undefined : timer ?? null,
         )
-        const disabledUntil = result.timer != null && result.timer > 0
-          ? Date.now() + result.timer * 1000
-          : null
-        updateState(id, { blocking: result, loading: false, disabledUntil })
+        updateState(id, { blocking: result, loading: false, disabledUntil: disabledUntilFrom(result) })
       } catch (err) {
-        updateState(id, {
-          loading: false,
-          error: err instanceof Error ? err.message : 'Toggle failed',
-        })
+        updateState(id, { loading: false, error: errorMessage(err, 'Toggle failed') })
       }
     },
     [updateState],
   )
 
-  /** Auto-refresh instances when their disable timer expires. */
-  useEffect(() => {
-    const timers: ReturnType<typeof setTimeout>[] = []
-    for (const [id, state] of states) {
-      if (state.disabledUntil && state.session?.sid) {
-        const remaining = state.disabledUntil - Date.now()
-        if (remaining > 0) {
-          timers.push(setTimeout(() => {
-            // Use ref to get fresh state when timer fires
-            const current = statesRef.current.get(id)
-            if (current?.session?.sid) refreshInstance(id)
-          }, remaining + 1000))
-        }
-      }
-    }
-    return () => timers.forEach(clearTimeout)
-  // Only re-run when disabledUntil values actually change
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...[...states.values()].map(s => s.disabledUntil)])
-
   /** Toggle blocking on/off across all connected instances at once. */
   const toggleAllBlocking = useCallback(
     async (enable: boolean, timer?: number) => {
       const entries = Array.from(statesRef.current.entries()).filter(
-        ([, s]) => s.session?.sid && s.blocking,
+        ([, s]) => s.sid && s.blocking,
       )
       if (entries.length === 0) return
 
@@ -210,19 +227,13 @@ export function usePiholeManager() {
         try {
           const result = await setBlocking(
             state.instance.baseUrl,
-            state.session!.sid!,
+            state.sid!,
             enable,
             enable ? undefined : timer ?? null,
           )
-          const disabledUntil = result.timer != null && result.timer > 0
-            ? Date.now() + result.timer * 1000
-            : null
-          updateState(id, { blocking: result, loading: false, disabledUntil })
+          updateState(id, { blocking: result, loading: false, disabledUntil: disabledUntilFrom(result) })
         } catch (err) {
-          updateState(id, {
-            loading: false,
-            error: err instanceof Error ? err.message : 'Toggle failed',
-          })
+          updateState(id, { loading: false, error: errorMessage(err, 'Toggle failed') })
         }
       }))
     },
@@ -233,7 +244,7 @@ export function usePiholeManager() {
   const lookupDomainStatus = useCallback(
     async (id: string) => {
       const state = statesRef.current.get(id)
-      if (!state?.session?.sid) return
+      if (!state?.sid) return
 
       const domain = currentDomain
       if (!domain) return
@@ -243,7 +254,7 @@ export function usePiholeManager() {
       })
 
       try {
-        const result = await searchDomain(state.instance.baseUrl, state.session.sid, domain)
+        const result = await searchDomain(state.instance.baseUrl, state.sid, domain)
         updateState(id, {
           domainStatus: { domain, search: result, loading: false },
         })
@@ -260,10 +271,10 @@ export function usePiholeManager() {
   const addCurrentDomain = useCallback(
     async (id: string, type: 'allow' | 'deny'): Promise<string> => {
       const state = statesRef.current.get(id)
-      if (!state?.session?.sid) throw new Error('Not connected')
+      if (!state?.sid) throw new Error('Not connected')
       if (!currentDomain) throw new Error('No active tab')
 
-      await addDomain(state.instance.baseUrl, state.session.sid, currentDomain, type)
+      await addDomain(state.instance.baseUrl, state.sid, currentDomain, type)
       // Refresh domain status after adding
       await lookupDomainStatus(id)
       return currentDomain
@@ -271,19 +282,17 @@ export function usePiholeManager() {
     [currentDomain, lookupDomainStatus],
   )
 
-  /** Remove the current tab's domain from the allow or deny list. */
-  const removeCurrentDomain = useCallback(
-    async (id: string, type: 'allow' | 'deny'): Promise<string> => {
+  /** Remove an exact domain or regex entry from the allow or deny list. */
+  const removeDomainEntry = useCallback(
+    async (id: string, entry: DomainRef): Promise<void> => {
       const state = statesRef.current.get(id)
-      if (!state?.session?.sid) throw new Error('Not connected')
-      if (!currentDomain) throw new Error('No active tab')
+      if (!state?.sid) throw new Error('Not connected')
 
-      await removeDomain(state.instance.baseUrl, state.session.sid, currentDomain, type)
+      await removeDomain(state.instance.baseUrl, state.sid, entry.domain, entry.type, entry.kind)
       // Refresh domain status after removing
       await lookupDomainStatus(id)
-      return currentDomain
     },
-    [currentDomain, lookupDomainStatus],
+    [lookupDomainStatus],
   )
 
   /** Save a new instance and connect to it. */
@@ -300,21 +309,37 @@ export function usePiholeManager() {
     [connectInstance],
   )
 
-  /** Edit an existing instance and reconnect. */
+  /** Edit an existing instance; reconnect when the address or password changed. */
   const editInstance = useCallback(
     async (id: string, data: Partial<Omit<PiholeInstance, 'id'>>) => {
+      const previous = statesRef.current.get(id)
       const updated = await updateInstance(id, data)
       setInstances(updated)
       const inst = updated.find((i) => i.id === id)
-      if (inst) {
-        await connectInstance(inst)
+      if (!inst) return
+
+      const sameServer =
+        previous?.sid &&
+        previous.instance.baseUrl === inst.baseUrl &&
+        previous.instance.password === inst.password
+      if (sameServer) {
+        // e.g. only renamed: keep the current session and data
+        updateState(id, { instance: inst })
+        return
       }
+
+      if (previous?.sid) {
+        logout(previous.instance.baseUrl, previous.sid).catch(() => {})
+      }
+      await clearSessionId(id)
+      await connectInstance(inst, false)
     },
-    [connectInstance],
+    [connectInstance, updateState],
   )
 
-  /** Remove an instance. */
+  /** Remove an instance and end its API session. */
   const deleteInstance = useCallback(async (id: string) => {
+    const state = statesRef.current.get(id)
     const updated = await removeInstance(id)
     setInstances(updated)
     setStates((prev) => {
@@ -322,7 +347,23 @@ export function usePiholeManager() {
       next.delete(id)
       return next
     })
+    if (state?.sid) {
+      logout(state.instance.baseUrl, state.sid).catch(() => {})
+    }
+    await clearSessionId(id)
   }, [])
+
+  /** Auto-refresh instances shortly after their disable timer expires. */
+  const timerKey = Array.from(states, ([id, s]) => `${id}:${s.sid ? s.disabledUntil ?? '' : ''}`).join('|')
+  useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = []
+    for (const [id, state] of statesRef.current) {
+      if (!state.disabledUntil || !state.sid) continue
+      const remaining = Math.max(state.disabledUntil - Date.now(), 0)
+      timers.push(setTimeout(() => refreshInstance(id, true), remaining + 1000))
+    }
+    return () => timers.forEach(clearTimeout)
+  }, [timerKey, refreshInstance])
 
   /** Load instances on mount and connect to all. */
   useEffect(() => {
@@ -349,29 +390,17 @@ export function usePiholeManager() {
     }
   }, [connectInstance])
 
-  /** After instances connect and we have a domain, look up domain status. */
+  /** Once an instance is connected and we know the domain, look up its status. */
+  const sidKey = instances.map((i) => states.get(i.id)?.sid ?? '').join('|')
   useEffect(() => {
     if (!currentDomain) return
-    const idsToLookup: string[] = []
-    for (const [id, state] of states) {
-      if (state.session?.sid && !state.domainStatus && !state.loading) {
-        idsToLookup.push(id)
+    for (const [id, state] of statesRef.current) {
+      // Only once per connection (domainStatus goes from null → loading)
+      if (state.sid && !state.domainStatus && !state.loading) {
+        lookupDomainStatus(id)
       }
     }
-    // Only look up once per instance (domainStatus goes from null → loading)
-    for (const id of idsToLookup) {
-      lookupDomainStatus(id)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDomain, ...instances.map(i => states.get(i.id)?.session?.sid)])
-
-  /** Helper to get the session for re-auth on the fly. */
-  const getSession = useCallback(
-    (id: string): PiholeSession | null => {
-      return states.get(id)?.session ?? null
-    },
-    [states],
-  )
+  }, [currentDomain, sidKey, lookupDomainStatus])
 
   return {
     instances,
@@ -385,8 +414,7 @@ export function usePiholeManager() {
     toggleBlocking,
     toggleAllBlocking,
     addCurrentDomain,
-    removeCurrentDomain,
+    removeDomainEntry,
     lookupDomainStatus,
-    getSession,
   }
 }

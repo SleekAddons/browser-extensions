@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import prettyMilliseconds from 'pretty-ms'
 import type { PiholeInstanceState } from '../lib/types'
+import type { DomainRef } from '../lib/usePiholeManager'
 import ContentCard from '@/components/ContentCard'
 import ExtensionToggle from '@/components/ExtensionToggle'
 import { Badge } from '@/components/ui/badge'
@@ -44,7 +45,7 @@ interface InstanceCardProps {
   onRefresh: () => void
   onToggleBlocking: (timer?: number) => void
   onAddDomain: (type: 'allow' | 'deny') => Promise<string>
-  onRemoveDomain: (type: 'allow' | 'deny') => Promise<string>
+  onRemoveDomain: (entry: DomainRef) => Promise<void>
   onEdit: () => void
   onDelete: () => void
 }
@@ -111,6 +112,7 @@ export default function InstanceCard(props: InstanceCardProps) {
   const { instance, summary, blocking, domainStatus, loading, error, lastRefreshedAt, disabledUntil } = state
 
   const [actionLoading, setActionLoading] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [refreshHovered, setRefreshHovered] = useState(false)
 
@@ -120,34 +122,47 @@ export default function InstanceCard(props: InstanceCardProps) {
   // After countdown expires, the auto-refresh takes ~1s — show loading during that gap
   const timerExpired = !isEnabled && !countdown && disabledUntil != null
 
-  const handleDomainAction = async (
-    action: 'add' | 'remove',
-    type: 'allow' | 'deny',
-  ) => {
+  const runDomainAction = async (action: () => Promise<unknown>) => {
     setActionLoading(true)
+    setActionError(null)
     try {
-      const fn = action === 'add' ? onAddDomain : onRemoveDomain
-      await fn(type)
-    } catch {
-      // errors handled upstream
+      await action()
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Action failed')
     } finally {
       setActionLoading(false)
     }
   }
 
-  const handleCopy = () => {
+  /** Add the current domain to a list, or remove its exact entry from it. */
+  const toggleListEntry = (type: 'allow' | 'deny', listed: boolean) =>
+    runDomainAction(() =>
+      listed && currentDomain
+        ? onRemoveDomain({ domain: currentDomain, type, kind: 'exact' })
+        : onAddDomain(type),
+    )
+
+  const handleCopy = async () => {
     if (!currentDomain) return
-    navigator.clipboard.writeText(currentDomain)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+    try {
+      await navigator.clipboard.writeText(currentDomain)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // Clipboard access can be denied; leave the button unchanged.
+    }
   }
 
   // Derive domain status: is it on the allow list, deny list, gravity, or unlisted?
   const domainEntries = domainStatus?.search?.domains ?? []
   const gravityEntries = domainStatus?.search?.gravity ?? []
 
-  const isOnAllowList = domainEntries.some((d) => d.type === 'allow')
-  const isOnDenyList = domainEntries.some((d) => d.type === 'deny')
+  // The Allow / Block buttons manage the exact entry for this domain. Regex
+  // matches are listed separately and removed through their own entry.
+  const hasExactEntry = (type: 'allow' | 'deny') =>
+    domainEntries.some((d) => d.type === type && d.kind === 'exact' && d.domain.toLowerCase() === currentDomain)
+  const isOnAllowList = hasExactEntry('allow')
+  const isOnDenyList = hasExactEntry('deny')
 
   return (
     <ContentCard
@@ -292,7 +307,7 @@ export default function InstanceCard(props: InstanceCardProps) {
         */}
 
         {/* Domain status section */}
-        {currentDomain && state.session?.sid && (
+        {currentDomain && state.sid && (
           <div className="flex flex-col gap-2.5 rounded-lg border bg-muted/30 p-4">
             {/* Domain input with copy */}
             <div className="flex">
@@ -331,17 +346,22 @@ export default function InstanceCard(props: InstanceCardProps) {
             {domainStatus?.search && (domainEntries.length > 0 || gravityEntries.length > 0) && (
               <div className="flex flex-col gap-1">
                 {domainEntries.map((d, i) => (
-                  <div key={`d-${i}`} className="flex items-center justify-between rounded border border-border/60 bg-muted/40 px-2 py-1">
-                    <div className="flex items-center gap-1.5 text-foreground/80">
-                      <span className="font-medium">{d.type === 'allow' ? 'Allow' : 'Deny'} list</span>
+                  <div key={`d-${i}`} className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/40 px-2 py-1">
+                    <div className="flex min-w-0 items-center gap-1.5 text-foreground/80">
+                      <span className="shrink-0 font-medium">
+                        {d.type === 'allow' ? 'Allow' : 'Deny'} {d.kind === 'regex' ? 'regex' : 'list'}
+                      </span>
+                      {d.kind === 'regex' && (
+                        <span className="truncate font-mono text-muted-foreground" title={d.domain}>{d.domain}</span>
+                      )}
                       {!d.enabled && <Badge variant="outline" className="px-1 py-0">disabled</Badge>}
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-5 px-1.5"
+                      className="h-5 shrink-0 px-1.5"
                       disabled={actionLoading}
-                      onClick={() => handleDomainAction('remove', d.type)}
+                      onClick={() => runDomainAction(() => onRemoveDomain(d))}
                     >
                       Remove
                     </Button>
@@ -363,7 +383,7 @@ export default function InstanceCard(props: InstanceCardProps) {
                 variant={isOnAllowList ? 'secondary' : 'outline'}
                 size="sm"
                 disabled={actionLoading || domainStatus?.loading}
-                onClick={() => handleDomainAction(isOnAllowList ? 'remove' : 'add', 'allow')}
+                onClick={() => toggleListEntry('allow', isOnAllowList)}
               >
                 {isOnAllowList ? <ShieldX size={12} /> : <ShieldMinus size={12} />}
                 {isOnAllowList ? 'Remove Allow' : 'Allow'}
@@ -372,12 +392,16 @@ export default function InstanceCard(props: InstanceCardProps) {
                 variant={isOnDenyList ? 'destructive' : 'outline'}
                 size="sm"
                 disabled={actionLoading || domainStatus?.loading}
-                onClick={() => handleDomainAction(isOnDenyList ? 'remove' : 'add', 'deny')}
+                onClick={() => toggleListEntry('deny', isOnDenyList)}
               >
                 {isOnDenyList ? <ShieldX size={12} /> : <ShieldPlus size={12} />}
                 {isOnDenyList ? 'Remove Block' : 'Block'}
               </Button>
             </div>
+
+            {actionError && (
+              <p className="text-sm text-destructive" role="alert">{actionError}</p>
+            )}
           </div>
         )}
     </ContentCard>

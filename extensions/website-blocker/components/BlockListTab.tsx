@@ -21,6 +21,7 @@ import type {
   Schedule,
   TrackingState,
 } from '../lib/types'
+import { elapsedTrackingSeconds, todayStr } from '../lib/usage'
 
 interface BlockListTabProps {
   rules: BlockRule[]
@@ -211,14 +212,14 @@ export default function BlockListTab({
             orderedRules.map((rule) => {
               const blockedCount = stats[rule.pattern]?.count ?? 0
               const usageEntry = usage[rule.pattern]
-              const today = new Date().toISOString().slice(0, 10)
-              const storedSeconds = usageEntry && usageEntry.date === today ? usageEntry.seconds : 0
+              const todayEntry = usageEntry && usageEntry.date === todayStr() ? usageEntry : null
+              const storedSeconds = todayEntry?.seconds ?? 0
               const liveExtra =
                 tracking && tracking.domain === rule.pattern
-                  ? Math.floor((Date.now() - tracking.startedAt) / 1000)
+                  ? elapsedTrackingSeconds(tracking.startedAt)
                   : 0
               const secondsSpent = storedSeconds + liveExtra
-              const visits = usage[rule.pattern]?.visits ?? 0
+              const visits = todayEntry?.visits ?? 0
               const hasLimit = limits.some((limit) => limit.pattern === rule.pattern)
               const hasSchedule = schedules.some((schedule) =>
                 schedule.patterns?.includes(rule.pattern),

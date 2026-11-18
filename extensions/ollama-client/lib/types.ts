@@ -101,6 +101,8 @@ export interface OllamaChatChunk {
   model: string
   message: ChatMessage
   done: boolean
+  /** Set instead of a message when generation fails mid-stream */
+  error?: string
   /** Present only on the final chunk (done === true) */
   prompt_eval_count?: number
   eval_count?: number

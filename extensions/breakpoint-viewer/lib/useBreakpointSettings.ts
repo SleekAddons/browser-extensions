@@ -67,7 +67,13 @@ export function useBreakpointSettings() {
     setSettings((prev) => {
       const preset = PRESETS.find((p) => p.id === prev.preset)
       const breakpoints = preset ? preset.breakpoints : DEFAULT_BREAKPOINTS
-      const next = { ...prev, breakpoints }
+      // In custom mode, also reset the remembered custom set; otherwise
+      // switching to a preset and back would bring the old values back.
+      const next = {
+        ...prev,
+        breakpoints,
+        ...(prev.preset === 'custom' && { customBreakpoints: breakpoints }),
+      }
       saveSettings(next)
       return next
     })

@@ -38,3 +38,50 @@ export async function removeInstance(id: string): Promise<PiholeInstance[]> {
   await saveInstances(instances)
   return instances
 }
+
+// ── API session cache ──────────────────────────────────────
+//
+// Pi-hole only allows a limited number of concurrent API sessions
+// (webserver.api.max_sessions, 16 by default) and each one stays alive for
+// webserver.session.timeout seconds. Logging in on every popup open would
+// use those seats up, so the session ID is kept in storage.session (memory
+// only, cleared when the browser exits) and reused until Pi-hole rejects it.
+
+interface CachedSession {
+  sid: string
+  baseUrl: string
+}
+
+const sessionKey = (instanceId: string) => `pihole_session_${instanceId}`
+
+/** Return a cached session ID for this instance, if one is available. */
+export async function loadSessionId(instance: PiholeInstance): Promise<string | null> {
+  const area = browser.storage.session
+  if (!area) return null // storage.session needs Chrome 102+ / Firefox 115+
+  try {
+    const key = sessionKey(instance.id)
+    const cached = (await area.get(key))[key] as CachedSession | undefined
+    return cached?.baseUrl === instance.baseUrl ? cached.sid : null
+  } catch {
+    return null
+  }
+}
+
+/** Remember the session ID for an instance. */
+export async function saveSessionId(instance: PiholeInstance, sid: string): Promise<void> {
+  try {
+    const cached: CachedSession = { sid, baseUrl: instance.baseUrl }
+    await browser.storage.session?.set({ [sessionKey(instance.id)]: cached })
+  } catch {
+    // Caching is an optimization only.
+  }
+}
+
+/** Forget the cached session ID for an instance. */
+export async function clearSessionId(instanceId: string): Promise<void> {
+  try {
+    await browser.storage.session?.remove(sessionKey(instanceId))
+  } catch {
+    // Caching is an optimization only.
+  }
+}

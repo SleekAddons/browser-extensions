@@ -13,7 +13,7 @@ import type {
   FileAttachment,
 } from './types'
 import { extractPageContent } from './extract-page-content'
-import { listModels, streamChat, checkConnection } from './api'
+import { listModels, streamChat } from './api'
 import {
   loadEndpoints,
   addEndpoint,
@@ -39,6 +39,18 @@ import {
   addTokenUsage,
   resetTokenUsage,
 } from './storage'
+
+/** How long to wait for an endpoint's model list before giving up. */
+const CONNECT_TIMEOUT_MS = 5000
+
+/** Turn a failed model-list request into a message for the endpoint card. */
+function connectionError(err: unknown, fallback: string): string {
+  // Network failures surface as TypeError, timeouts as TimeoutError.
+  if (err instanceof TypeError || (err instanceof Error && err.name === 'TimeoutError')) {
+    return 'Cannot reach Ollama server'
+  }
+  return err instanceof Error ? err.message : fallback
+}
 
 async function getActiveTabId(): Promise<number | null> {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true })
@@ -115,16 +127,12 @@ export function useOllamaClient() {
       })
 
       try {
-        const reachable = await checkConnection(endpoint.baseUrl, endpoint.authToken)
-        if (!reachable) {
-          updateState(id, {
-            loading: false,
-            error: 'Cannot reach Ollama server',
-          })
-          return
-        }
-
-        const models = await listModels(endpoint.baseUrl, endpoint.authToken)
+        // A single /api/tags request both checks the connection and lists models.
+        const models = await listModels(
+          endpoint.baseUrl,
+          endpoint.authToken,
+          AbortSignal.timeout(CONNECT_TIMEOUT_MS),
+        )
         updateState(id, {
           models,
           connected: true,
@@ -133,7 +141,7 @@ export function useOllamaClient() {
       } catch (err) {
         updateState(id, {
           loading: false,
-          error: err instanceof Error ? err.message : 'Connection failed',
+          error: connectionError(err, 'Connection failed'),
         })
       }
     },
@@ -149,12 +157,16 @@ export function useOllamaClient() {
       updateState(id, { loading: true, error: null })
 
       try {
-        const models = await listModels(state.endpoint.baseUrl, state.endpoint.authToken)
+        const models = await listModels(
+          state.endpoint.baseUrl,
+          state.endpoint.authToken,
+          AbortSignal.timeout(CONNECT_TIMEOUT_MS),
+        )
         updateState(id, { models, connected: true, loading: false })
       } catch (err) {
         updateState(id, {
           loading: false,
-          error: err instanceof Error ? err.message : 'Refresh failed',
+          error: connectionError(err, 'Refresh failed'),
         })
       }
     },
@@ -309,7 +321,7 @@ export function useOllamaClient() {
         await fetchPageContext()
       }
     },
-    [chatOptions, fetchPageContext, states, activeEndpointId],
+    [chatOptions, fetchPageContext],
   )
 
   /** Toggle a command's active state in chat options. */

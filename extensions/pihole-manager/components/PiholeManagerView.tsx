@@ -23,7 +23,7 @@ export default function PiholeManagerView(props: { className?: string }) {
     toggleBlocking,
     toggleAllBlocking,
     addCurrentDomain,
-    removeCurrentDomain,
+    removeDomainEntry,
   } = usePiholeManager()
 
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -31,7 +31,7 @@ export default function PiholeManagerView(props: { className?: string }) {
   const { ref: instancesRef, needsPadding: instancesPadding } = useScrollable()
 
   const connectedStates = Array.from(states.values()).filter(
-    (s) => s.session?.sid && s.blocking,
+    (s) => s.sid && s.blocking,
   )
   const hasConnected = connectedStates.length > 0
   const allEnabled = hasConnected && connectedStates.every((s) => s.blocking?.blocking === 'enabled')
@@ -111,7 +111,7 @@ export default function PiholeManagerView(props: { className?: string }) {
                 onRefresh={() => refreshInstance(instance.id)}
                 onToggleBlocking={(timer) => toggleBlocking(instance.id, timer)}
                 onAddDomain={(type) => addCurrentDomain(instance.id, type)}
-                onRemoveDomain={(type) => removeCurrentDomain(instance.id, type)}
+                onRemoveDomain={(entry) => removeDomainEntry(instance.id, entry)}
                 onEdit={() => setEditingId(instance.id)}
                 onDelete={() => deleteInstance(instance.id)}
               />

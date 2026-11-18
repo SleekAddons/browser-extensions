@@ -25,12 +25,15 @@ export default function ExportPanel(props: ExportPanelProps) {
   const [copied, setCopied] = useState(false)
   const disabled = tableData === null
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!tableData) return
-    const text = exportTable(tableData, format)
-    navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+    try {
+      await navigator.clipboard.writeText(exportTable(tableData, format))
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // Clipboard access can be denied; leave the button unchanged.
+    }
   }
 
   const handleDownload = () => {

@@ -1,16 +1,65 @@
-import { XMLBuilder } from 'fast-xml-parser'
 import Papa from 'papaparse'
 import * as XLSX from 'xlsx'
 import type { ExportFormat, TableData } from './types'
 
-function toObjects(data: TableData): Record<string, string>[] {
-  return data.rows.map((row) => {
-    const obj: Record<string, string> = {}
-    data.headers.forEach((header, i) => {
-      obj[header || `column_${i + 1}`] = row[i] ?? ''
-    })
-    return obj
+/**
+ * Pads the header and every row to the widest row, so cells beyond the
+ * header row (e.g. under a colspan header) are exported instead of dropped.
+ */
+function normalize(data: TableData): TableData {
+  const width = data.rows.reduce((max, row) => Math.max(max, row.length), data.headers.length)
+  const pad = (cells: string[]) =>
+    cells.length >= width ? cells : [...cells, ...Array<string>(width - cells.length).fill('')]
+  return { headers: pad(data.headers), rows: data.rows.map(pad) }
+}
+
+/**
+ * Turns header labels into unique field names: empty labels become
+ * `column_N` and repeated labels get a `_2`, `_3`… suffix, so no column can
+ * overwrite another one.
+ */
+function uniqueKeys(headers: string[], toKey: (label: string) => string = (label) => label): string[] {
+  const used = new Set<string>()
+  return headers.map((header, i) => {
+    const base = toKey(header.trim()) || `column_${i + 1}`
+    let key = base
+    for (let n = 2; used.has(key); n++) key = `${base}_${n}`
+    used.add(key)
+    return key
   })
+}
+
+function toObjects(data: TableData): Record<string, string>[] {
+  const { headers, rows } = normalize(data)
+  const keys = uniqueKeys(headers)
+  return rows.map((row) => Object.fromEntries(keys.map((key, i) => [key, row[i]])))
+}
+
+// Characters that are not allowed anywhere in an XML 1.0 document.
+const INVALID_XML_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g
+
+function escapeMarkup(value: string): string {
+  return value
+    .replace(INVALID_XML_CHARS, '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
+/**
+ * Converts a header label into a valid XML element name, e.g.
+ * "First Name" → "First_Name" and "2024" → "_2024".
+ */
+function toXmlName(label: string): string {
+  const name = Array.from(label, (ch) =>
+    /[\w.-]/.test(ch) || (ch.codePointAt(0)! >= 0xc0 && /[\p{L}\p{Nd}\p{M}]/u.test(ch)) ? ch : '_',
+  )
+    .join('')
+    .replace(/_{2,}/g, '_')
+    .replace(/^_|_$/g, '')
+  if (!name) return ''
+  // Names must start with a letter or "_" and must not start with "xml".
+  return /^[\p{L}_]/u.test(name) && !/^xml/i.test(name) ? name : `_${name}`
 }
 
 export function toJson(data: TableData): string {
@@ -18,25 +67,29 @@ export function toJson(data: TableData): string {
 }
 
 export function toXml(data: TableData): string {
-  const builder = new XMLBuilder({
-    format: true,
-    indentBy: '  ',
-    arrayNodeName: 'row',
-  })
-  return builder.build({ table: { row: toObjects(data) } })
+  const { headers, rows } = normalize(data)
+  const names = uniqueKeys(headers, toXmlName)
+  const lines = ['<?xml version="1.0" encoding="UTF-8"?>', '<table>']
+  for (const row of rows) {
+    lines.push('  <row>')
+    names.forEach((name, i) => lines.push(`    <${name}>${escapeMarkup(row[i])}</${name}>`))
+    lines.push('  </row>')
+  }
+  lines.push('</table>')
+  return lines.join('\n')
 }
 
 export function toHtml(data: TableData): string {
-  const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const { headers, rows } = normalize(data)
   const lines: string[] = ['<table>', '  <thead>', '    <tr>']
-  for (const header of data.headers) {
-    lines.push(`      <th>${escape(header)}</th>`)
+  for (const header of headers) {
+    lines.push(`      <th>${escapeMarkup(header)}</th>`)
   }
   lines.push('    </tr>', '  </thead>', '  <tbody>')
-  for (const row of data.rows) {
+  for (const row of rows) {
     lines.push('    <tr>')
     for (const cell of row) {
-      lines.push(`      <td>${escape(cell)}</td>`)
+      lines.push(`      <td>${escapeMarkup(cell)}</td>`)
     }
     lines.push('    </tr>')
   }
@@ -45,11 +98,15 @@ export function toHtml(data: TableData): string {
 }
 
 export function toCsv(data: TableData): string {
-  return Papa.unparse(toObjects(data))
+  const { headers, rows } = normalize(data)
+  // Pass the fields explicitly: going through objects would move numeric
+  // headers such as "2024" in front of the other columns.
+  return Papa.unparse({ fields: uniqueKeys(headers), data: rows })
 }
 
 export function toXlsx(data: TableData): Uint8Array {
-  const ws = XLSX.utils.aoa_to_sheet([data.headers, ...data.rows])
+  const { headers, rows } = normalize(data)
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
   const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
@@ -77,23 +134,15 @@ export function getMimeType(format: ExportFormat): string {
 }
 
 export function downloadExport(data: TableData, format: ExportFormat, filename?: string) {
-  if (format === 'xlsx') {
-    const bytes = toXlsx(data)
-    const blob = new Blob([bytes], { type: getMimeType(format) })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename ?? 'table-export.xlsx'
-    a.click()
-    URL.revokeObjectURL(url)
-    return
-  }
-  const content = exportTable(data, format)
-  const blob = new Blob([content], { type: getMimeType(format) })
-  const url = URL.createObjectURL(blob)
+  const content = format === 'xlsx' ? toXlsx(data) : exportTable(data, format)
+  const url = URL.createObjectURL(new Blob([content], { type: getMimeType(format) }))
   const a = document.createElement('a')
   a.href = url
   a.download = filename ?? `table-export.${format}`
+  // Firefox needs the link in the document, and revoking the object URL
+  // right after click() can cancel the download before it has started.
+  document.body.appendChild(a)
   a.click()
-  URL.revokeObjectURL(url)
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }

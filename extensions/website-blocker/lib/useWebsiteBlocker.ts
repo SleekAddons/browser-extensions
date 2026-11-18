@@ -11,17 +11,7 @@ import {
   clearStats as clearStatsStorage,
   clearAll as clearAllStorage,
 } from './storage'
-
-/** Normalize a raw input into a plain domain string. */
-function cleanPattern(raw: string, autoIdentifyWww = true): string {
-  return raw
-    .replace(/^https?:\/\//, '')
-    .replace(/\/.*$/, '')
-    .replace(/^\*\./, '')
-    .replace(/^www\./, autoIdentifyWww ? '' : 'www.')
-    .trim()
-    .toLowerCase()
-}
+import { cleanPattern } from './patterns'
 
 export function useWebsiteBlocker() {
   const [settings, setSettings] = useState<BlockerSettings>(DEFAULT_SETTINGS)
