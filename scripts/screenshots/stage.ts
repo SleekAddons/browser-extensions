@@ -51,8 +51,6 @@ export interface Scene {
   /** Large headline; trusted HTML (may contain <br>). Promo tiles show the extension name instead. */
   headline: string
   subhead?: string
-  /** Small pills under the subhead (split layouts only). */
-  chips?: string[]
   /**
    * Where the copy goes: beside the UI, or as a band above it. `promo` is for
    * promo tiles: the extension's name and subhead on the left, and the popup
@@ -82,7 +80,7 @@ export interface Scene {
   /** Selector that must be visible before the actions run. */
   ready?: { frame: FrameRole; selector: string }
   actions?: Action[]
-  /** Extra HTML placed on the canvas (cards, …). */
+  /** Extra HTML placed on the canvas. */
   extras?: string
   /** Extra JS run in the stage once it has loaded. */
   stageScript?: string
@@ -234,14 +232,9 @@ function renderPromoCopy(scene: Scene, name: string): string {
 function renderCopy(scene: Scene, name: string): string {
   if (scene.layout === 'promo') return renderPromoCopy(scene, name)
   const side = scene.layout === 'band' ? 'band' : `split ${scene.layout === 'split-left' ? 'left' : 'right'}`
-  const chips =
-    scene.chips?.length && scene.layout !== 'band'
-      ? `<div class="chips">${scene.chips.map((c) => `<span class="chip">${escapeHtml(c)}</span>`).join('')}</div>`
-      : ''
   return `<div class="copy ${side}">
     <h1 class="headline">${keepHyphenatedWords(scene.headline)}</h1>
     ${scene.subhead ? `<p class="subhead">${copyText(scene.subhead)}</p>` : ''}
-    ${chips}
   </div>`
 }
 

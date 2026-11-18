@@ -117,26 +117,6 @@ body {
   max-width: 820px;
 }
 
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 7px 13px;
-  white-space: nowrap;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.06);
-  font-size: 14px;
-  font-weight: 520;
-  color: #e4e4e7;
-}
-
 /* Promo tiles: extension name and tagline (sizes set inline per tile). */
 .copy.promo {
   top: 0;
@@ -409,53 +389,6 @@ body {
 .popup iframe {
   display: block;
   border: 0;
-}
-
-/* ── Free-form decorations used by individual scenes ─── */
-
-.card {
-  position: absolute;
-  z-index: 4;
-  border-radius: 14px;
-  background: rgba(24, 24, 27, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.8);
-  color: #e4e4e7;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-}
-
-.card-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: 13px;
-  font-weight: 600;
-  color: #fafafa;
-}
-
-.card pre {
-  margin: 0;
-  padding: 14px 16px 16px;
-  font-family: 'JetBrains Mono Variable', ui-monospace, monospace;
-  font-size: 12.5px;
-  line-height: 1.6;
-  color: #d4d4d8;
-  white-space: pre;
-}
-
-.tok-key {
-  color: #fafafa;
-}
-
-.tok-str {
-  color: #a1a1aa;
-}
-
-.tok-dim {
-  color: #71717a;
 }
 
 /* Loaded for the extension to read, but not part of the picture. */
