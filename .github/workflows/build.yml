@@ -55,8 +55,11 @@ jobs:
 
       # <ext>-<version>-chrome.zip, <ext>-<version>-firefox.zip and
       # <ext>-<version>-sources.zip (the source archive AMO asks for).
+      # .output is a dot folder, which upload-artifact treats as hidden and
+      # skips unless include-hidden-files is set. Only the zips match the path.
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.extension }}
           path: .output/*.zip
+          include-hidden-files: true
           if-no-files-found: error
