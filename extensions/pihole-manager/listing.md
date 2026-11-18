@@ -8,13 +8,13 @@ ships with the next version; on AMO it also has to be pasted into Summary.
 ## Summary (132 characters max)
 
 ```text
-Pi-hole in your toolbar: see stats, pause ad blocking for a few minutes, and allow or block the current site in one click.
+Pi-hole in your toolbar: see stats, pause blocking for a few minutes, and allow or block the current site in one click.
 ```
 
 ## Description
 
 ```text
-Pi-hole Manager puts your Pi-hole in the browser toolbar. See query stats, turn ad blocking on or off, disable it for a few minutes when a site breaks, and allow or block the current site's domain without opening the Pi-hole admin dashboard. Works with Pi-hole v6 and newer, and with several Pi-hole servers at once.
+Pi-hole Manager puts your Pi-hole in the browser toolbar. See query stats, turn blocking on or off, disable it for a few minutes when a site breaks, and allow or block the current site's domain without opening the Pi-hole admin dashboard. Works with Pi-hole v6 and newer, and with several Pi-hole servers at once.
 
 FEATURES
 • Stats for each Pi-hole: total queries, blocked queries and percent blocked
@@ -31,10 +31,10 @@ HOW TO USE
 3. Use the switches and the current site panel right in the popup.
 
 WHO IT IS FOR
-Pi-hole users who want quick control over network-wide ad blocking, for example to unblock a broken site for a moment or to check why a domain is blocked.
+Pi-hole users who want quick control over network-wide DNS blocking, for example to unblock a broken site for a moment or to check why a domain is blocked.
 
 PRIVACY
-The extension talks only to the Pi-hole servers you add. Passwords are stored locally in your browser. No account, no tracking.
+The extension talks only to the Pi-hole servers you add. Passwords are stored locally in your browser. No account required.
 
 OPEN SOURCE
 The full source code is on GitHub: https://github.com/SleekAddons/browser-extensions
