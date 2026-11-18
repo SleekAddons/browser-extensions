@@ -9,9 +9,11 @@ on:
 permissions:
   contents: read
 
+# Superseded pull request runs are cancelled. Runs on master queue instead, so
+# a newer push can never cancel a release that is being published.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   # Extensions are discovered the same way as extensions/registry.ts does it:
@@ -63,3 +65,43 @@ jobs:
           path: .output/*.zip
           include-hidden-files: true
           if-no-files-found: error
+
+  # Publishes release v<version> (version from package.json) with the Chrome
+  # and Firefox zips of every extension, once all builds have passed. A version
+  # is released only once: later pushes with the same version are skipped, so
+  # bump the version in package.json to publish a new release.
+  release:
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check for an existing release
+        id: version
+        run: |
+          tag="v$(jq -r .version package.json)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" > /dev/null 2>&1; then
+            echo "Release $tag already exists. Bump the version in package.json to publish a new one."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.version.outputs.exists != 'true'
+        uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publish release
+        if: steps.version.outputs.exists != 'true'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          gh release create "$TAG" dist/*-chrome.zip dist/*-firefox.zip \
+            --title "$TAG" --target "$GITHUB_SHA" --generate-notes
