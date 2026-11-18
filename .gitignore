@@ -1,3 +1,9 @@
 node_modules
 .output
 .wxt
+
+# Store credentials for `npm run deploy` (see .env.example)
+.env
+.env.*
+!.env.example
+secrets/

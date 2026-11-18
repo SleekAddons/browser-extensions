@@ -1,0 +1,5 @@
+{
+  "1.png": "Ask your local Ollama models about the page you are reading, in the side panel",
+  "2.png": "Pick any model installed on your Ollama server",
+  "3.png": "Code answers with syntax highlighting, sent only to your own Ollama server"
+}

@@ -47,12 +47,14 @@ export default function BreakpointList(props: BreakpointListProps) {
               <InputGroupAddon align="inline-start">
                 <InputGroupText>&ge;</InputGroupText>
               </InputGroupAddon>
+              {/* No spin buttons: they take ~16px of this narrow field and cut off
+                  4-digit widths like 1024. Arrow keys still step the value. */}
               <InputGroupInput
                 type="number"
                 min={0}
                 value={bp.minWidth}
                 onChange={(e) => props.onUpdate(i, { minWidth: Number(e.target.value) })}
-                className="h-7"
+                className="h-7 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
               <InputGroupAddon align="inline-end">
                 <InputGroupText>px</InputGroupText>

@@ -68,9 +68,17 @@ export default defineConfig({
   zip: {
     name: ext,
     artifactTemplate: `${ext}-{{version}}-{{browser}}.zip`,
-    excludeSources: Object.keys(extensions)
-      .filter((name) => name !== ext)
-      .map((name) => `extensions/${name}/**`),
+    excludeSources: [
+      ...Object.keys(extensions)
+        .filter((name) => name !== ext)
+        .map((name) => `extensions/${name}/**`),
+      // Repo tooling and store screenshots are not needed to build the
+      // extension, and deploy credentials must never be uploaded (.env* is
+      // already excluded by WXT).
+      'scripts/**',
+      'extensions/*/screenshots/**',
+      'secrets/**',
+    ],
   },
   vite: () => ({
     plugins: [

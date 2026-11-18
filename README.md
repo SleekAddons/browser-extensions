@@ -6,11 +6,11 @@ A collection of browser extensions for Chrome and Firefox, built with [WXT](http
 
 | Folder | Name | Description | Chrome | Firefox |
 | --- | --- | --- | --- | --- |
-| [extensions/breakpoint-viewer](extensions/breakpoint-viewer/README.md) | Breakpoint Viewer | Show the active CSS breakpoint on any page (Tailwind, Bootstrap, custom). | [Chrome](https://chromewebstore.google.com/detail/tailwind-breakpoint-viewe/opoganallbaahcdakchbmnlmimemobid) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/breakpoint-viewer/) |
-| [extensions/ollama-client](extensions/ollama-client/README.md) | Ollama Client | Chat with local Ollama AI models from a side panel. | [Chrome](https://chromewebstore.google.com/detail/ollama-client/chjmddjaldiindjecpdpfdpojeamfdgb) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/ollama-client-by-sleek-addons/) |
-| [extensions/pihole-manager](extensions/pihole-manager/README.md) | Pi-hole Manager | Monitor and control Pi-hole instances from the toolbar. | [Chrome](https://chromewebstore.google.com/detail/pi-hole-manager/lknjhhcjbaahogmgnjfkdpkenebfcjb) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/pi-hole-manager/) |
-| [extensions/table-extractor](extensions/table-extractor/README.md) | Table Extractor | Extract HTML tables and export to CSV, JSON, XML, HTML, XLSX. | [Chrome](https://chromewebstore.google.com/detail/table-extractor/poheddickmdclbcjkhfkeccfnolplnoi) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/table-extractor/) |
-| [extensions/website-blocker](extensions/website-blocker/README.md) | Website Blocker | Block sites with schedules, time limits, and usage stats. | [Chrome](https://chromewebstore.google.com/detail/website-blocker/bfbhaeaddmhmiilkmolfjfppknmimpei) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/website-blocker-by-sleekaddons/) |
+| [extensions/breakpoint-viewer](extensions/breakpoint-viewer/) | Breakpoint Viewer | Show the active CSS breakpoint on any page (Tailwind, Bootstrap, custom). | [Chrome](https://chromewebstore.google.com/detail/tailwind-breakpoint-viewe/opoganallbaahcdakchbmnlmimemobid) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/breakpoint-viewer/) |
+| [extensions/ollama-client](extensions/ollama-client/) | Ollama Client | Chat with local Ollama AI models from a side panel. | [Chrome](https://chromewebstore.google.com/detail/ollama-client/chjmddjaldiindjecpdpfdpojeamfdgb) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/ollama-client-by-sleek-addons/) |
+| [extensions/pihole-manager](extensions/pihole-manager/) | Pi-hole Manager | Monitor and control Pi-hole instances from the toolbar. | [Chrome](https://chromewebstore.google.com/detail/pi-hole-manager/lknjhhcjbaahogmgnjfbkdpkenebfcjb) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/pi-hole-manager/) |
+| [extensions/table-extractor](extensions/table-extractor/) | Table Extractor | Extract HTML tables and export to CSV, JSON, XML, HTML, XLSX. | [Chrome](https://chromewebstore.google.com/detail/table-extractor/poheddickmdclbcjkhfkeccfnolplnoi) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/table-extractor/) |
+| [extensions/website-blocker](extensions/website-blocker/) | Website Blocker | Block sites with schedules, time limits, and usage stats. | [Chrome](https://chromewebstore.google.com/detail/website-blocker/bfbhaeaddmhmiilkmolfjfppknmimpei) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/website-blocker-by-sleekaddons/) |
 
 ## Requirements
 
@@ -65,6 +65,40 @@ npx tsx scripts/generate-icons.ts table-extractor   # regenerate for one
 ```
 
 Override initials in [scripts/generate-icons.ts](scripts/generate-icons.ts) via `INITIALS_OVERRIDE`. Promo tiles for store listings are generated similarly with `npm run generate-promo-tiles`.
+
+## Store screenshots
+
+Each extension keeps its store screenshots (1280×800) in `extensions/<name>/screenshots/`, committed to git, with optional captions in `captions.json` next to them. Deploying uploads whatever is in that folder, so you can also drop in your own images.
+
+To regenerate them after UI changes (needs Google Chrome, or `CHROME_PATH` pointing to a Chromium-based browser):
+
+```bash
+npm run generate-screenshots                                 # all extensions
+npm run generate-screenshots -- table-extractor --only 2     # one screenshot
+```
+
+The generator builds the extension and renders its real popup or side panel with demo data. Scenes (headline, demo data, clicks) live in [scripts/screenshots/scenes/](scripts/screenshots/scenes/).
+
+## Publishing to the stores
+
+`npm run deploy` builds the extensions with the version from `package.json` and publishes them:
+
+- **Chrome Web Store**: uploads the package and submits it for review.
+- **Firefox Add-ons**: uploads the package with its source code archive, then replaces the listing screenshots with the ones in `extensions/<name>/screenshots/` if they differ.
+
+The Chrome Web Store API cannot change listing screenshots, so upload those by hand in the [Developer Dashboard](https://chrome.google.com/webstore/devconsole) when they change.
+
+One-time setup: copy `.env.example` to `.env` and fill in the credentials (the comments explain where to get them). `.env` is git-ignored and never included in uploaded archives. Store IDs live in `extensions/<name>/store.json`.
+
+```bash
+npm run deploy -- table-extractor            # one extension, both stores
+npm run deploy -- --all                      # every extension
+npm run deploy -- --all --dry-run            # show what would happen, change nothing
+npm run deploy -- pihole-manager --store firefox
+npm run deploy -- --all --screenshots-only   # only sync Firefox screenshots
+```
+
+Re-running is safe: versions that are already uploaded and screenshots that already match are skipped. A new version must be higher than the published one, so bump `version` in `package.json` first. If an earlier version is still in Chrome review, pass `--cancel-pending` to withdraw it. Run `npm run deploy -- --help` for all options.
 
 ## Key libraries
 

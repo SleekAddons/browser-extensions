@@ -1,0 +1,3 @@
+/* Bundled fonts so screenshots render the same on every machine. */
+@import url('/__stage/fonts/inter/index.css');
+@import url('/__stage/fonts/jetbrains-mono/index.css');

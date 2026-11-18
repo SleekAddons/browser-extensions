@@ -1,0 +1,448 @@
+/* Layout of a 1280x800 store screenshot. See ../stage.ts. */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: #0d0d0e;
+}
+
+.canvas {
+  position: relative;
+  width: 1280px;
+  height: 800px;
+  overflow: hidden;
+  font-family: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  color: #fafafa;
+  -webkit-font-smoothing: antialiased;
+  background:
+    radial-gradient(900px 620px at 18% -8%, rgba(255, 255, 255, 0.11), transparent 70%),
+    radial-gradient(900px 700px at 100% 110%, rgba(255, 255, 255, 0.05), transparent 70%),
+    linear-gradient(180deg, #1c1c1e 0%, #111112 55%, #0c0c0d 100%);
+}
+
+/* Faint dot grid, fading out towards the edges. */
+.canvas::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1.2px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(760px 520px at 30% 30%, #000 0%, transparent 75%);
+  mask-image: radial-gradient(760px 520px at 30% 30%, #000 0%, transparent 75%);
+  pointer-events: none;
+}
+
+/* Soft accent light behind the product. */
+.glow {
+  position: absolute;
+  width: 760px;
+  height: 760px;
+  border-radius: 50%;
+  background: #ffffff;
+  opacity: 0.1;
+  filter: blur(140px);
+  pointer-events: none;
+}
+
+/* ── Copy ─────────────────────────────────────────────── */
+
+.copy {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.copy.split {
+  top: 0;
+  bottom: 0;
+  width: 400px;
+  justify-content: center;
+}
+
+.copy.split.left {
+  left: 72px;
+}
+
+.copy.split.right {
+  right: 64px;
+}
+
+.copy.band {
+  top: 34px;
+  left: 0;
+  right: 0;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.headline {
+  margin: 0;
+  font-size: 50px;
+  line-height: 1.06;
+  font-weight: 720;
+  letter-spacing: -0.038em;
+  color: #ffffff;
+  text-wrap: balance;
+}
+
+.band .headline {
+  font-size: 42px;
+  line-height: 1.1;
+}
+
+.subhead {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.5;
+  color: #a1a1aa;
+  text-wrap: pretty;
+}
+
+.band .subhead {
+  font-size: 18px;
+  max-width: 820px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 14px;
+  font-weight: 520;
+  color: #e4e4e7;
+}
+
+.chip svg {
+  color: #a1a1aa;
+}
+
+/* ── Browser window ───────────────────────────────────── */
+
+.browser {
+  --b-strip: #dfe3e8;
+  --b-toolbar: #ffffff;
+  --b-omni: #eef1f4;
+  --b-text: #1f1f1f;
+  --b-muted: #6b7075;
+  --b-icon: #5f6368;
+  --b-border: #e2e5e9;
+  --b-active: #e3e6ea;
+  --b-page: #ffffff;
+  position: absolute;
+  z-index: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--b-page);
+  box-shadow:
+    0 40px 90px -20px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.09);
+  transform-origin: top left;
+}
+
+.browser.dark {
+  --b-strip: #1b1c1e;
+  --b-toolbar: #2c2d30;
+  --b-omni: #1f2023;
+  --b-text: #e8eaed;
+  --b-muted: #9aa0a6;
+  --b-icon: #c4c7c5;
+  --b-border: #3a3b3e;
+  --b-active: #44454a;
+  --b-page: #0a0a0a;
+}
+
+.tabstrip {
+  display: flex;
+  align-items: flex-end;
+  height: 40px;
+  padding: 0 0 0 10px;
+  background: var(--b-strip);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 236px;
+  height: 33px;
+  padding: 0 12px;
+  border-radius: 10px 10px 0 0;
+  background: var(--b-toolbar);
+  font-size: 12.5px;
+  color: var(--b-text);
+  white-space: nowrap;
+}
+
+.tab .title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab .close {
+  color: var(--b-muted);
+  display: grid;
+}
+
+.newtab {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 33px;
+  color: var(--b-icon);
+}
+
+.favicon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: #111111;
+  font-size: 10px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.browser.dark .favicon {
+  background: #e5e5e5;
+  color: #111111;
+}
+
+.favicon.generic,
+.browser.dark .favicon.generic {
+  background: none;
+  color: var(--b-muted);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 44px;
+  padding: 0 10px;
+  background: var(--b-toolbar);
+  border-bottom: 1px solid var(--b-border);
+  color: var(--b-icon);
+}
+
+.tb-btn {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+
+.tb-btn.active {
+  background: var(--b-active);
+}
+
+.tb-btn.dim {
+  opacity: 0.45;
+}
+
+.omnibox {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+  margin: 0 8px;
+  padding: 0 14px;
+  border-radius: 16px;
+  background: var(--b-omni);
+  font-size: 13.5px;
+  color: var(--b-text);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.omnibox .path {
+  color: var(--b-muted);
+}
+
+.omnibox .ext-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 10px;
+  margin-right: 2px;
+  border-right: 1px solid var(--b-border);
+}
+
+.omnibox .star {
+  margin-left: auto;
+  color: var(--b-icon);
+  display: grid;
+}
+
+.viewport {
+  position: absolute;
+  top: 84px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  background: var(--b-page);
+}
+
+.viewport > iframe {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: #ffffff;
+}
+
+.sidepanel {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  border-left: 1px solid var(--b-border);
+  background: var(--b-toolbar);
+}
+
+.sidepanel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 8px 0 14px;
+  border-bottom: 1px solid var(--b-border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--b-text);
+}
+
+.sidepanel-header .spacer {
+  flex: 1;
+}
+
+.sidepanel-header .tb-btn {
+  width: 26px;
+  height: 26px;
+  color: var(--b-icon);
+}
+
+.sidepanel iframe {
+  flex: 1;
+  width: 100%;
+  border: 0;
+}
+
+/* The extension popup, normally anchored under its toolbar button. */
+.popup {
+  position: absolute;
+  z-index: 3;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #ffffff;
+  transform-origin: top left;
+  box-shadow:
+    0 24px 60px -12px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.popup.dark {
+  background: #0a0a0a;
+  box-shadow:
+    0 24px 60px -12px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+/* Shown on its own, without a browser window. */
+.popup.standalone {
+  border-radius: 14px;
+  box-shadow:
+    0 40px 90px -24px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.popup.standalone.dark {
+  box-shadow:
+    0 40px 90px -24px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+.popup iframe {
+  display: block;
+  border: 0;
+}
+
+/* ── Free-form decorations used by individual scenes ─── */
+
+.card {
+  position: absolute;
+  z-index: 4;
+  border-radius: 14px;
+  background: rgba(24, 24, 27, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.8);
+  color: #e4e4e7;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+  font-weight: 600;
+  color: #fafafa;
+}
+
+.card pre {
+  margin: 0;
+  padding: 14px 16px 16px;
+  font-family: 'JetBrains Mono Variable', ui-monospace, monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #d4d4d8;
+  white-space: pre;
+}
+
+.tok-key {
+  color: #fafafa;
+}
+
+.tok-str {
+  color: #a1a1aa;
+}
+
+.tok-dim {
+  color: #71717a;
+}
+
+/* Loaded for the extension to read, but not part of the picture. */
+.offscreen-page {
+  position: absolute;
+  left: -4000px;
+  top: 0;
+  width: 1024px;
+  height: 768px;
+  border: 0;
+}
