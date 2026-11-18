@@ -37,7 +37,7 @@ const TILES: TileSpec[] = [
 /** Override auto-generated initials for specific extensions. */
 const INITIALS_OVERRIDE: Record<string, string> = {
   'pihole-manager': 'PI',
-  'ollama-client': 'LM',
+  'llm-client': 'LM',
 }
 
 /** Override auto-derived display name for specific extensions. */
@@ -48,7 +48,7 @@ const NAME_OVERRIDE: Record<string, string> = {
 /** Short tagline shown under the name. Falls back to manifest description. */
 const TAGLINE_OVERRIDE: Record<string, string> = {
   'breakpoint-viewer': 'See the active CSS breakpoint instantly.',
-  'ollama-client': 'Chat with local AI in your browser.',
+  'llm-client': 'Chat with local or cloud AI in your browser.',
   'pihole-manager': 'Control every Pi-hole from one place.',
   'table-extractor': 'Export any web table to CSV or XLSX.',
   'website-blocker': 'Block distractions. Reclaim your focus.',

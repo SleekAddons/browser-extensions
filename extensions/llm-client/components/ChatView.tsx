@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import EmptyState from '@/components/EmptyState'
-import type { Conversation, OllamaModel, ChatCommand, ChatOptions, PageContext, TokenUsageStats, FileAttachment } from '../lib/types'
+import type { Conversation, ModelInfo, ChatCommand, ChatOptions, PageContext, TokenUsageStats, FileAttachment } from '../lib/types'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -44,9 +44,6 @@ import {
 import { SYSTEM_COMMANDS } from '../lib/types'
 import { MAX_CONVERSATIONS } from '../lib/storage'
 
-/** Default Ollama context window when no custom value is configured */
-const DEFAULT_CONTEXT_SIZE = 4096
-
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4)
 }
@@ -69,7 +66,7 @@ function formatTokenCount(tokens: number): string {
 interface ChatViewProps {
   conversation: Conversation | null
   conversations: Conversation[]
-  models: OllamaModel[]
+  models: ModelInfo[]
   selectedModel: string | null
   onSelectModel: (model: string) => void
   isStreaming: boolean
@@ -82,7 +79,8 @@ interface ChatViewProps {
   endpointConnected: boolean
   chatOptions: ChatOptions
   commands: ChatCommand[]
-  contextSize?: number
+  /** Context window of the selected model, in tokens */
+  contextSize: number
   pageContext: PageContext | null
   pageContextLoading: boolean
   onTogglePageContext: (enabled: boolean) => void
@@ -117,17 +115,18 @@ export default function ChatView(props: ChatViewProps) {
     onGoToEndpoints,
   } = props
 
-  const maxContextTokens = contextSize ?? DEFAULT_CONTEXT_SIZE
+  const maxContextTokens = contextSize
   const pageTokens = pageContext ? estimateTokens(pageContext.textContent) : 0
   const pageContextExceedsLimit = pageTokens > maxContextTokens
 
-  // Context usage: only use actual Ollama-reported tokens (no estimates)
+  // Context usage: only use actual server-reported tokens (no estimates)
   // After a response, total context = prompt tokens (all input) + completion tokens (generated output)
   const messages_ = conversation?.messages ?? []
   const lastAssistantWithUsage = [...messages_].reverse().find((m) => m.role === 'assistant' && m.tokenUsage)
   const lastPromptTokens = lastAssistantWithUsage?.tokenUsage?.promptTokens ?? 0
   const lastCompletionTokens = lastAssistantWithUsage?.tokenUsage?.completionTokens ?? 0
   const hasActualUsage = lastPromptTokens > 0
+  const hasReplies = messages_.some((m) => m.role === 'assistant')
   const globalTokens = lastPromptTokens + lastCompletionTokens
   const globalUsagePercent = hasActualUsage ? Math.min((globalTokens / maxContextTokens) * 100, 100) : 0
   const globalExceedsLimit = hasActualUsage && globalTokens > maxContextTokens
@@ -412,7 +411,7 @@ export default function ChatView(props: ChatViewProps) {
               <EmptyState
                 icon={<Server />}
                 title="No endpoint connected"
-                description="Add an Ollama endpoint to start chatting."
+                description="Add an Ollama or OpenAI-compatible endpoint to start chatting."
               >
                 <Button
                   variant="default"
@@ -564,8 +563,10 @@ export default function ChatView(props: ChatViewProps) {
             <div className="flex flex-col gap-2">
               <p className="text-muted-foreground">
                 {hasActualUsage
-                  ? 'Actual token usage reported by Ollama for the last request.'
-                  : 'Send a message to see actual token usage.'}
+                  ? 'Actual token usage reported by the server for the last request.'
+                  : hasReplies
+                    ? 'The server did not report token usage for this chat.'
+                    : 'Send a message to see actual token usage.'}
               </p>
               <div className="flex items-center justify-between ">
                 <span className="font-medium">Context window</span>

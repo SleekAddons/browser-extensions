@@ -1,4 +1,5 @@
-import type { OllamaEndpointState } from '../lib/types'
+import { useState } from 'react'
+import type { EndpointState } from '../lib/types'
 import ContentCard from '@/components/ContentCard'
 import DeleteDialog from '@/components/DeleteDialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -6,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
-import { formatModelSize } from '../lib/api'
+import { PROVIDERS, formatModelSize } from '../lib/api'
 import {
   RefreshCw,
   Trash2,
@@ -15,8 +16,11 @@ import {
   CheckCircle,
 } from 'lucide-react'
 
+/** Models listed before a "+N more" button, so long cloud model lists stay compact */
+const MAX_VISIBLE_MODELS = 12
+
 interface EndpointCardProps {
-  state: OllamaEndpointState
+  state: EndpointState
   isActive: boolean
   onSelect: () => void
   onRefresh: () => void
@@ -27,6 +31,10 @@ interface EndpointCardProps {
 export default function EndpointCard(props: EndpointCardProps) {
   const { state, isActive, onSelect, onRefresh, onEdit, onDelete } = props
   const { endpoint, models, connected, loading, error } = state
+  const [showAllModels, setShowAllModels] = useState(false)
+  const visibleModels = showAllModels ? models : models.slice(0, MAX_VISIBLE_MODELS)
+  const hiddenModelCount = models.length - visibleModels.length
+  const isOllama = endpoint.provider === 'ollama'
 
   return (
     <ContentCard
@@ -64,11 +72,17 @@ export default function EndpointCard(props: EndpointCardProps) {
         </div>
       }
     >
+      <p className="truncate text-muted-foreground" title={endpoint.baseUrl}>
+        {PROVIDERS[endpoint.provider].label} · {endpoint.baseUrl}
+      </p>
+
       {/* Model list */}
       {!connected && !loading && (
         <Alert variant="destructive">
           <AlertDescription>
-            Unable to connect. Check that Ollama is running at {endpoint.baseUrl}.
+            {isOllama
+              ? `Unable to connect. Check that Ollama is running at ${endpoint.baseUrl}.`
+              : 'Unable to connect. Check the URL and API key.'}
             {error && <span className="mt-1 block font-mono text-xs opacity-80">{error}</span>}
           </AlertDescription>
         </Alert>
@@ -76,18 +90,27 @@ export default function EndpointCard(props: EndpointCardProps) {
 
       {connected && models.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {models.map((model) => (
+          {visibleModels.map((model) => (
             <Badge key={model.name} variant="outline" className="py-0.5 px-2 font-normal">
-              {model.name} ({formatModelSize(model.size)})
+              {model.size ? `${model.name} (${formatModelSize(model.size)})` : model.name}
             </Badge>
           ))}
+          {hiddenModelCount > 0 && (
+            <Badge asChild variant="secondary" className="py-0.5 px-2 font-normal">
+              <button type="button" onClick={() => setShowAllModels(true)}>
+                +{hiddenModelCount} more
+              </button>
+            </Badge>
+          )}
         </div>
       )}
 
       {connected && models.length === 0 && !loading && (
         <Alert>
           <AlertDescription>
-            No models found. Pull a model with <code>ollama pull</code>.
+            {isOllama
+              ? <>No models found. Pull a model with <code>ollama pull</code>.</>
+              : 'No chat models found on this server.'}
           </AlertDescription>
         </Alert>
       )}

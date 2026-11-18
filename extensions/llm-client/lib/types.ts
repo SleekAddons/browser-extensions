@@ -1,29 +1,46 @@
-/** A saved Ollama endpoint configuration */
-export interface OllamaEndpoint {
+/** API an endpoint speaks */
+export type EndpointProvider = 'ollama' | 'openai'
+
+/** A saved endpoint configuration */
+export interface Endpoint {
   /** Unique identifier */
   id: string
   /** Display name for this endpoint */
   name: string
-  /** Base URL of the Ollama server (e.g. http://localhost:11434) */
+  /** API the server speaks: Ollama's own API, or the OpenAI Chat Completions API */
+  provider: EndpointProvider
+  /**
+   * Base URL of the server. Ollama: the server root (e.g. http://localhost:11434).
+   * OpenAI-compatible: the API root including its version (e.g. https://api.openai.com/v1).
+   */
   baseUrl: string
-  /** Optional Bearer token for authenticated Ollama endpoints */
+  /** Optional Bearer token (API key) for authenticated endpoints */
   authToken?: string
-  /** Context window size (num_ctx) - defaults to model's built-in value when omitted */
+  /**
+   * Context window size in tokens. Ollama receives it as num_ctx; for OpenAI-compatible
+   * servers it only sizes the usage meter and page-content trimming.
+   */
   contextSize?: number
   /** Optional system prompt prepended to every conversation on this endpoint */
   systemPrompt?: string
 }
 
-/** Model info returned by Ollama /api/tags */
-export interface OllamaModel {
+/**
+ * An endpoint as found in storage. Endpoints saved before OpenAI-compatible
+ * support was added have no provider: they are all Ollama endpoints.
+ */
+export type StoredEndpoint = Omit<Endpoint, 'provider'> & { provider?: string }
+
+/** A model offered by an endpoint */
+export interface ModelInfo {
+  /** Model identifier sent with chat requests */
   name: string
-  model: string
-  modified_at: string
-  size: number
-  digest: string
+  /** Size on disk in bytes (reported by Ollama only) */
+  size?: number
+  /** Context window in tokens, when the server reports it */
+  contextLength?: number
 }
 
-/** A single chat message */
 /** Metadata stored on a user message when page context was included */
 export interface MessagePageContext {
   /** Page title */
@@ -50,18 +67,32 @@ export interface FileAttachment {
   textContent?: string
 }
 
-/** A single chat message */
+/** A single chat message, as stored in a conversation */
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
-  /** Base64-encoded images for Ollama vision models */
-  images?: string[]
   /** File attachment metadata for display purposes */
   attachments?: FileAttachment[]
   /** Present on user messages that included page context */
   pageContext?: MessagePageContext
-  /** Actual token usage reported by Ollama (present on assistant messages) */
-  tokenUsage?: OllamaTokenUsage
+  /** Actual token usage reported by the server (present on assistant messages) */
+  tokenUsage?: TokenUsage
+}
+
+/** An image sent to a vision model */
+export interface ImageInput {
+  /** MIME type, e.g. image/png */
+  mimeType: string
+  /** Base64-encoded data (without the data URI prefix) */
+  data: string
+}
+
+/** A message as sent to the model with a chat request (never stored) */
+export interface RequestMessage {
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  /** Images attached to this message */
+  images?: ImageInput[]
 }
 
 /** A saved conversation */
@@ -82,39 +113,24 @@ export interface Conversation {
   updatedAt: number
 }
 
-/** Token usage reported by Ollama in the final streaming chunk */
-export interface OllamaTokenUsage {
+/** Token usage reported by the server at the end of a response */
+export interface TokenUsage {
   /** Number of tokens evaluated in the prompt */
   promptTokens: number
   /** Number of tokens generated in the response */
   completionTokens: number
-  /** Total duration in nanoseconds */
-  totalDuration: number
-  /** Time spent evaluating the prompt in nanoseconds */
-  promptEvalDuration: number
-  /** Time spent generating the response in nanoseconds */
-  evalDuration: number
+  /** Total duration in nanoseconds (Ollama only) */
+  totalDuration?: number
+  /** Time spent evaluating the prompt in nanoseconds (Ollama only) */
+  promptEvalDuration?: number
+  /** Time spent generating the response in nanoseconds (Ollama only) */
+  evalDuration?: number
 }
 
-/** Streaming chunk from Ollama chat API */
-export interface OllamaChatChunk {
-  model: string
-  message: ChatMessage
-  done: boolean
-  /** Set instead of a message when generation fails mid-stream */
-  error?: string
-  /** Present only on the final chunk (done === true) */
-  prompt_eval_count?: number
-  eval_count?: number
-  total_duration?: number
-  prompt_eval_duration?: number
-  eval_duration?: number
-}
-
-/** State for a connected Ollama endpoint */
-export interface OllamaEndpointState {
-  endpoint: OllamaEndpoint
-  models: OllamaModel[]
+/** State for a connected endpoint */
+export interface EndpointState {
+  endpoint: Endpoint
+  models: ModelInfo[]
   connected: boolean
   loading: boolean
   error: string | null

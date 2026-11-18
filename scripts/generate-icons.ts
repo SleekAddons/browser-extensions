@@ -21,7 +21,7 @@ const EXTENSIONS_DIR = path.join(ROOT, 'extensions')
 /** Override auto-generated initials for specific extensions. */
 const INITIALS_OVERRIDE: Record<string, string> = {
   'pihole-manager': 'PI',
-  'ollama-client': 'LM',
+  'llm-client': 'LM',
 }
 
 /** Extract initials from an extension display name (up to 2 chars). */

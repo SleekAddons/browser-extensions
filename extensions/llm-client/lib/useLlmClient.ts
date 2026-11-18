@@ -1,19 +1,21 @@
 import { browser } from 'wxt/browser'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
-  OllamaEndpoint,
-  OllamaEndpointState,
-  OllamaModel,
+  Endpoint,
+  EndpointState,
+  ModelInfo,
   Conversation,
   ChatMessage,
   ChatCommand,
   ChatOptions,
+  ImageInput,
   PageContext,
+  RequestMessage,
   TokenUsageStats,
   FileAttachment,
 } from './types'
 import { extractPageContent } from './extract-page-content'
-import { listModels, streamChat } from './api'
+import { contextWindow, listModels, streamChat } from './api'
 import {
   loadEndpoints,
   addEndpoint,
@@ -47,7 +49,7 @@ const CONNECT_TIMEOUT_MS = 5000
 function connectionError(err: unknown, fallback: string): string {
   // Network failures surface as TypeError, timeouts as TimeoutError.
   if (err instanceof TypeError || (err instanceof Error && err.name === 'TimeoutError')) {
-    return 'Cannot reach Ollama server'
+    return 'Cannot reach server'
   }
   return err instanceof Error ? err.message : fallback
 }
@@ -69,9 +71,9 @@ function extractPageHtml(): { html: string; url: string } {
   }
 }
 
-export function useOllamaClient() {
-  const [endpoints, setEndpoints] = useState<OllamaEndpoint[]>([])
-  const [states, setStates] = useState<Map<string, OllamaEndpointState>>(new Map())
+export function useLlmClient() {
+  const [endpoints, setEndpoints] = useState<Endpoint[]>([])
+  const [states, setStates] = useState<Map<string, EndpointState>>(new Map())
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
   const [activeEndpointId, setActiveEndpointId] = useState<string | null>(null)
@@ -96,7 +98,7 @@ export function useOllamaClient() {
 
   /** Update the state for a specific endpoint. */
   const updateState = useCallback(
-    (id: string, patch: Partial<OllamaEndpointState>) => {
+    (id: string, patch: Partial<EndpointState>) => {
       setStates((prev) => {
         const next = new Map(prev)
         const existing = next.get(id)
@@ -111,7 +113,7 @@ export function useOllamaClient() {
 
   /** Connect to a single endpoint: check connection, fetch models. */
   const connectEndpoint = useCallback(
-    async (endpoint: OllamaEndpoint) => {
+    async (endpoint: Endpoint) => {
       const id = endpoint.id
 
       setStates((prev) => {
@@ -127,12 +129,8 @@ export function useOllamaClient() {
       })
 
       try {
-        // A single /api/tags request both checks the connection and lists models.
-        const models = await listModels(
-          endpoint.baseUrl,
-          endpoint.authToken,
-          AbortSignal.timeout(CONNECT_TIMEOUT_MS),
-        )
+        // A single model-list request both checks the connection and lists models.
+        const models = await listModels(endpoint, AbortSignal.timeout(CONNECT_TIMEOUT_MS))
         updateState(id, {
           models,
           connected: true,
@@ -157,11 +155,7 @@ export function useOllamaClient() {
       updateState(id, { loading: true, error: null })
 
       try {
-        const models = await listModels(
-          state.endpoint.baseUrl,
-          state.endpoint.authToken,
-          AbortSignal.timeout(CONNECT_TIMEOUT_MS),
-        )
+        const models = await listModels(state.endpoint, AbortSignal.timeout(CONNECT_TIMEOUT_MS))
         updateState(id, { models, connected: true, loading: false })
       } catch (err) {
         updateState(id, {
@@ -175,8 +169,8 @@ export function useOllamaClient() {
 
   /** Save a new endpoint and connect to it. */
   const addNewEndpoint = useCallback(
-    async (data: Omit<OllamaEndpoint, 'id'>) => {
-      const endpoint: OllamaEndpoint = {
+    async (data: Omit<Endpoint, 'id'>) => {
+      const endpoint: Endpoint = {
         ...data,
         id: crypto.randomUUID(),
       }
@@ -196,7 +190,7 @@ export function useOllamaClient() {
 
   /** Edit an existing endpoint and reconnect. */
   const editEndpoint = useCallback(
-    async (id: string, data: Partial<Omit<OllamaEndpoint, 'id'>>) => {
+    async (id: string, data: Partial<Omit<Endpoint, 'id'>>) => {
       const updated = await updateEndpoint(id, data)
       setEndpoints(updated)
       const ep = updated.find((e) => e.id === id)
@@ -399,10 +393,10 @@ export function useOllamaClient() {
         }
       }
 
-      // Collect base64 images for Ollama's images field
-      const imageBase64 = hasAttachments
-        ? attachments.filter((a) => a.base64).map((a) => a.base64!)
-        : undefined
+      // Collect images for vision models
+      const images: ImageInput[] = hasAttachments
+        ? attachments.filter((a) => a.base64).map((a) => ({ mimeType: a.type, data: a.base64! }))
+        : []
 
       // Build the user message for storage (without file content or base64 data)
       const userMessageForStorage: ChatMessage = {
@@ -412,11 +406,10 @@ export function useOllamaClient() {
       }
 
       // Build the user message for the API (with file text inlined and images)
-      const userMessageForApi: ChatMessage = {
+      const userMessageForApi: RequestMessage = {
         role: 'user',
         content: apiContent,
-        ...(hasAttachments ? { attachments: attachments.map(({ base64, textContent, ...meta }) => meta) } : {}),
-        ...(imageBase64 && imageBase64.length > 0 ? { images: imageBase64 } : {}),
+        ...(images.length > 0 ? { images } : {}),
       }
 
       const updatedMessages = (hasContent || hasAttachments)
@@ -451,7 +444,7 @@ export function useOllamaClient() {
       let assistantContent = ''
 
       // Build messages for API - prepend system messages for active options
-      const apiMessages: ChatMessage[] = []
+      const apiMessages: RequestMessage[] = []
 
       // Endpoint-level system prompt (always first)
       if (state.endpoint.systemPrompt) {
@@ -473,7 +466,7 @@ export function useOllamaClient() {
         setPageContext(freshContext)
 
         if (freshContext) {
-          const maxTokens = state.endpoint.contextSize ?? 4096
+          const maxTokens = contextWindow(state.endpoint, state.models.find((m) => m.name === selectedModel))
           const maxChars = maxTokens * 4
           let pageText = freshContext.textContent
           let truncated = false
@@ -520,11 +513,7 @@ export function useOllamaClient() {
 
       // Push conversation history - swap the last user message with the API version (includes images)
       for (const msg of updatedMessages) {
-        if (msg === userMessageForStorage && userMessageForApi !== userMessageForStorage) {
-          apiMessages.push(userMessageForApi)
-        } else {
-          apiMessages.push(msg)
-        }
+        apiMessages.push(msg === userMessageForStorage ? userMessageForApi : { role: msg.role, content: msg.content })
       }
 
       // If no user message in the conversation (command-only), add a trigger for the API
@@ -537,17 +526,14 @@ export function useOllamaClient() {
 
       try {
         const tokenUsage = await streamChat(
-          state.endpoint.baseUrl,
+          state.endpoint,
           selectedModel,
           apiMessages,
-          (chunk) => {
-            if (chunk.message?.content) {
-              assistantContent += chunk.message.content
-              setStreamingContent(assistantContent)
-            }
+          (text) => {
+            assistantContent += text
+            setStreamingContent(assistantContent)
           },
           controller.signal,
-          { contextSize: state.endpoint.contextSize, authToken: state.endpoint.authToken },
         )
 
         // Save the complete assistant message
@@ -625,7 +611,13 @@ export function useOllamaClient() {
     ? states.get(activeEndpointId) ?? null
     : null
 
-  const activeModels: OllamaModel[] = activeEndpointState?.models ?? []
+  const activeModels: ModelInfo[] = activeEndpointState?.models ?? []
+
+  /** Context window of the active endpoint and model, in tokens. */
+  const contextSize = contextWindow(
+    activeEndpointState?.endpoint,
+    activeModels.find((m) => m.name === selectedModel),
+  )
 
   /** Load endpoints and conversations on mount. */
   useEffect(() => {
@@ -742,6 +734,7 @@ export function useOllamaClient() {
 
     // Model selection
     activeModels,
+    contextSize,
     selectedModel,
     setSelectedModel: (model: string | null) => {
       setSelectedModel(model)

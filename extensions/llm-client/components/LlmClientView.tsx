@@ -2,9 +2,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import EmptyState from '@/components/EmptyState'
 import { Spinner } from '@/components/ui/spinner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useOllamaClient } from '../lib/useOllamaClient'
-import AddEndpointDialog from './AddEndpointDialog'
-import EditEndpointDialog from './EditEndpointDialog'
+import { useLlmClient } from '../lib/useLlmClient'
+import EndpointForm from './EndpointForm'
 import EndpointCard from './EndpointCard'
 import ChatView from './ChatView'
 import CommandsView from './CommandsView'
@@ -13,7 +12,7 @@ import { BotMessageSquare, Info, Server, Zap } from 'lucide-react'
 import { useState } from 'react'
 import { useScrollable } from '@/lib/useScrollable'
 
-export default function OllamaClientView(props: { className?: string }) {
+export default function LlmClientView(props: { className?: string }) {
   const {
     endpoints,
     states,
@@ -26,6 +25,7 @@ export default function OllamaClientView(props: { className?: string }) {
     deleteEndpoint,
     refreshEndpoint,
     activeModels,
+    contextSize,
     selectedModel,
     setSelectedModel,
     conversations,
@@ -47,7 +47,7 @@ export default function OllamaClientView(props: { className?: string }) {
     deleteCommand,
     tokenUsageStats,
     resetUsageStats,
-  } = useOllamaClient()
+  } = useLlmClient()
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('chat')
@@ -108,7 +108,7 @@ export default function OllamaClientView(props: { className?: string }) {
           endpointConnected={activeEndpointState?.connected ?? false}
           chatOptions={chatOptions}
           commands={commands}
-          contextSize={activeEndpointState?.endpoint.contextSize}
+          contextSize={contextSize}
           pageContext={pageContext}
           pageContextLoading={pageContextLoading}
           onTogglePageContext={(enabled) => updateChatOptions({ pageContextEnabled: enabled, pageContextAutoDisabled: false })}
@@ -137,21 +137,24 @@ export default function OllamaClientView(props: { className?: string }) {
 
       <TabsContent value="endpoints" className="flex min-h-0 flex-1 flex-col">
         <div className="flex min-h-0 flex-1 flex-col gap-3">
-          <Alert>
-            <Info size={16} />
-            <AlertTitle className="text-base font-semibold">Cross-Origin Configuration</AlertTitle>
-            <AlertDescription className='text-balance'>
-              Allow additional web origins so this extension can reach Ollama.{' '}
-              <a
-                href="https://docs.ollama.com/faq#how-can-i-allow-additional-web-origins-to-access-ollama"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline underline-offset-2"
-              >
-                Learn how to configure CORS
-              </a>
-            </AlertDescription>
-          </Alert>
+          {/* Ollama rejects requests from browser extensions until their origin is allowed */}
+          {(endpoints.length === 0 || endpoints.some((e) => e.provider === 'ollama')) && (
+            <Alert>
+              <Info size={16} />
+              <AlertTitle className="text-base font-semibold">Cross-Origin Configuration</AlertTitle>
+              <AlertDescription className='text-balance'>
+                Allow additional web origins so this extension can reach Ollama.{' '}
+                <a
+                  href="https://docs.ollama.com/faq#how-can-i-allow-additional-web-origins-to-access-ollama"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-2"
+                >
+                  Learn how to configure CORS
+                </a>
+              </AlertDescription>
+            </Alert>
+          )}
 
           <ItemCounter
             count={endpoints.length}
@@ -162,7 +165,9 @@ export default function OllamaClientView(props: { className?: string }) {
 
           <div ref={endpointsRef} className={`min-h-0 flex-1 overflow-y-scroll ${endpointsPadding ? 'pr-3' : ''}`}>
             <div className="flex flex-col gap-3">
-              <AddEndpointDialog open={showAddEndpoint} onOpenChange={setShowAddEndpoint} onAdd={addNewEndpoint} />
+              {showAddEndpoint && (
+                <EndpointForm onSubmit={addNewEndpoint} onClose={() => setShowAddEndpoint(false)} />
+              )}
 
               {loading && (
                 <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
@@ -174,8 +179,8 @@ export default function OllamaClientView(props: { className?: string }) {
               {!loading && endpoints.length === 0 && !showAddEndpoint && (
                 <EmptyState
                   icon={<Server />}
-                  title="No Ollama endpoints configured."
-                  description="Add one to get started."
+                  title="No endpoints configured."
+                  description="Add an Ollama or OpenAI-compatible endpoint to get started."
                 />
               )}
 
@@ -183,15 +188,11 @@ export default function OllamaClientView(props: { className?: string }) {
                 const state = states.get(endpoint.id)
                 if (!state) return null
                 return editingId === endpoint.id ? (
-                  <EditEndpointDialog
+                  <EndpointForm
                     key={endpoint.id}
                     endpoint={endpoint}
-                    open
-                    onOpenChange={(open) => { if (!open) setEditingId(null) }}
-                    onSave={async (id, data) => {
-                      await editEndpoint(id, data)
-                      setEditingId(null)
-                    }}
+                    onSubmit={(data) => editEndpoint(endpoint.id, data)}
+                    onClose={() => setEditingId(null)}
                   />
                 ) : (
                   <EndpointCard

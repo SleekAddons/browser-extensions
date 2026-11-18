@@ -2,8 +2,8 @@ import pkg from '../../package.json'
 import type { UserManifest } from 'wxt'
 
 export default {
-  name: 'Ollama Client',
-  description: 'Chat with your local Ollama AI models right from the browser',
+  name: 'LLM Client',
+  description: 'Chat with Ollama or any OpenAI-compatible AI model right from the browser',
   version: pkg.version,
   icons: {
     16: 'icon16.png',

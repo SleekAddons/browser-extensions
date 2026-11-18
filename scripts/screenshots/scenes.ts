@@ -5,14 +5,14 @@
 
 import type { Scene } from './stage'
 import { breakpointViewerScenes } from './scenes/breakpoint-viewer'
-import { ollamaClientScenes } from './scenes/ollama-client'
+import { llmClientScenes } from './scenes/llm-client'
 import { piholeManagerScenes } from './scenes/pihole-manager'
 import { tableExtractorScenes } from './scenes/table-extractor'
 import { websiteBlockerScenes } from './scenes/website-blocker'
 
 export const SCENES: Record<string, Scene[]> = {
   'breakpoint-viewer': breakpointViewerScenes,
-  'ollama-client': ollamaClientScenes,
+  'llm-client': llmClientScenes,
   'pihole-manager': piholeManagerScenes,
   'table-extractor': tableExtractorScenes,
   'website-blocker': websiteBlockerScenes,

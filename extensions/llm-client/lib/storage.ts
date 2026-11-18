@@ -1,7 +1,10 @@
 import { browser } from 'wxt/browser'
-import type { OllamaEndpoint, Conversation, ChatCommand, ChatOptions, TokenUsageStats } from './types'
+import type { Endpoint, StoredEndpoint, Conversation, ChatCommand, ChatOptions, TokenUsageStats } from './types'
 import { SYSTEM_COMMANDS } from './types'
 
+// Storage keys keep the "ollama_" prefix from when this extension was called
+// Ollama Client, so installs updated from those versions keep their endpoints,
+// chats and settings. Do not rename them.
 const ENDPOINTS_KEY = 'ollama_endpoints'
 const CONVERSATIONS_KEY = 'ollama_conversations'
 const COMMANDS_KEY = 'ollama_commands'
@@ -18,19 +21,28 @@ const DEFAULT_CHAT_OPTIONS: ChatOptions = {
   activeCommandIds: [],
 }
 
-/** Load all saved Ollama endpoints from storage. */
-export async function loadEndpoints(): Promise<OllamaEndpoint[]> {
+/**
+ * Fill in fields added after an endpoint was saved. Endpoints from versions
+ * before OpenAI-compatible support have no provider: they are Ollama endpoints.
+ */
+function normalizeEndpoint(stored: StoredEndpoint): Endpoint {
+  return { ...stored, provider: stored.provider === 'openai' ? 'openai' : 'ollama' }
+}
+
+/** Load all saved endpoints from storage. */
+export async function loadEndpoints(): Promise<Endpoint[]> {
   const result = await browser.storage.local.get(ENDPOINTS_KEY)
-  return (result[ENDPOINTS_KEY] as OllamaEndpoint[] | undefined) ?? []
+  const stored = (result[ENDPOINTS_KEY] as StoredEndpoint[] | undefined) ?? []
+  return stored.map(normalizeEndpoint)
 }
 
 /** Save all endpoints to storage. */
-export async function saveEndpoints(endpoints: OllamaEndpoint[]): Promise<void> {
+export async function saveEndpoints(endpoints: Endpoint[]): Promise<void> {
   await browser.storage.local.set({ [ENDPOINTS_KEY]: endpoints })
 }
 
 /** Add a new endpoint and persist. */
-export async function addEndpoint(endpoint: OllamaEndpoint): Promise<OllamaEndpoint[]> {
+export async function addEndpoint(endpoint: Endpoint): Promise<Endpoint[]> {
   const endpoints = await loadEndpoints()
   endpoints.push(endpoint)
   await saveEndpoints(endpoints)
@@ -40,8 +52,8 @@ export async function addEndpoint(endpoint: OllamaEndpoint): Promise<OllamaEndpo
 /** Update an existing endpoint by ID and persist. */
 export async function updateEndpoint(
   id: string,
-  data: Partial<Omit<OllamaEndpoint, 'id'>>,
-): Promise<OllamaEndpoint[]> {
+  data: Partial<Omit<Endpoint, 'id'>>,
+): Promise<Endpoint[]> {
   const endpoints = await loadEndpoints()
   const idx = endpoints.findIndex((e) => e.id === id)
   if (idx === -1) throw new Error('Endpoint not found')
@@ -51,7 +63,7 @@ export async function updateEndpoint(
 }
 
 /** Remove an endpoint by ID and persist. */
-export async function removeEndpoint(id: string): Promise<OllamaEndpoint[]> {
+export async function removeEndpoint(id: string): Promise<Endpoint[]> {
   const endpoints = (await loadEndpoints()).filter((e) => e.id !== id)
   await saveEndpoints(endpoints)
   return endpoints
@@ -171,6 +183,7 @@ export async function saveSelectedModel(model: string | null): Promise<void> {
 
 // ── Active Conversation / Endpoint ─────────────────────────
 
+// Legacy "ollama_" prefix kept for existing installs, see the keys at the top
 const ACTIVE_CONVERSATION_KEY = 'ollama_active_conversation_id'
 const ACTIVE_ENDPOINT_KEY = 'ollama_active_endpoint_id'
 
