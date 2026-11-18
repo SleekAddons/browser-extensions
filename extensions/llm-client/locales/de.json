@@ -6,7 +6,6 @@
   "endpoints": "Endpunkte",
   "addCommand": "Befehl hinzufügen",
   "addEndpoint": "Endpunkt hinzufügen",
-  "corsTitle": "Cross-Origin-Konfiguration",
   "corsDescription": "Zusätzliche Web-Ursprünge zulassen, damit diese Erweiterung Ollama erreichen kann.",
   "corsLink": "Anleitung zur CORS-Konfiguration",
   "loadingEndpoints": "Endpunkte werden geladen…",

@@ -6,7 +6,6 @@
   "endpoints": "Endpoints",
   "addCommand": "Add Command",
   "addEndpoint": "Add Endpoint",
-  "corsTitle": "Cross-Origin Configuration",
   "corsDescription": "Allow additional web origins so this extension can reach Ollama.",
   "corsLink": "Learn how to configure CORS",
   "loadingEndpoints": "Loading endpoints…",

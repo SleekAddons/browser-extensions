@@ -6,7 +6,6 @@
   "endpoints": "Servidores",
   "addCommand": "Agregar comando",
   "addEndpoint": "Agregar servidor",
-  "corsTitle": "Configuración de CORS",
   "corsDescription": "Permite orígenes web adicionales para que esta extensión pueda acceder a Ollama.",
   "corsLink": "Aprende a configurar CORS",
   "loadingEndpoints": "Cargando servidores…",

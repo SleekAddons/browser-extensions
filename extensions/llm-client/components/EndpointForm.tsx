@@ -3,12 +3,13 @@ import type { Endpoint, EndpointProvider } from '../lib/types'
 import { DEFAULT_CONTEXT_SIZE, PROVIDERS } from '../lib/api'
 import ContentCard from '@/components/ContentCard'
 import OptionPicker from '@/components/OptionPicker'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
-import { X } from 'lucide-react'
+import { Info, X } from 'lucide-react'
 import { t } from '../lib/i18n'
 
 /** Form text that depends on the API the endpoint speaks */
@@ -167,7 +168,24 @@ export default function EndpointForm(props: EndpointFormProps) {
             inputMode="url"
             autoComplete="url"
           />
-          {text.urlHint && <p className="text-xs text-muted-foreground">{text.urlHint}</p>}
+          {text.urlHint && <p className="text-xs text-balance text-muted-foreground">{text.urlHint}</p>}
+          {/* Ollama rejects requests from browser extensions until their origin is allowed */}
+          {!isEdit && provider === 'ollama' && (
+            <Alert role="note" className="gap-y-0 px-3 py-2 has-[>svg]:gap-x-2 [&>svg]:size-3.5">
+              <Info />
+              <AlertDescription className="block text-xs text-balance">
+                {t('corsDescription')}{' '}
+                <a
+                  href="https://docs.ollama.com/faq#how-can-i-allow-additional-web-origins-to-access-ollama"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-2 hover:text-foreground"
+                >
+                  {t('corsLink')}
+                </a>
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -180,7 +198,7 @@ export default function EndpointForm(props: EndpointFormProps) {
             onChange={(e) => setAuthToken(e.target.value)}
             autoComplete="off"
           />
-          <p className="text-xs text-muted-foreground">{text.tokenHint}</p>
+          <p className="text-xs text-balance text-muted-foreground">{text.tokenHint}</p>
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -195,7 +213,7 @@ export default function EndpointForm(props: EndpointFormProps) {
             onChange={(e) => setContextSize(e.target.value)}
             inputMode="numeric"
           />
-          <p className="text-xs text-muted-foreground">{text.contextHint}</p>
+          <p className="text-xs text-balance text-muted-foreground">{text.contextHint}</p>
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -208,11 +226,11 @@ export default function EndpointForm(props: EndpointFormProps) {
             rows={3}
             className="resize-y"
           />
-          <p className="text-xs text-muted-foreground">{t('systemPromptHint')}</p>
+          <p className="text-xs text-balance text-muted-foreground">{t('systemPromptHint')}</p>
         </div>
 
         {error && (
-          <p className="text-sm text-destructive" role="alert">{error}</p>
+          <p className="text-sm text-balance text-destructive" role="alert">{error}</p>
         )}
 
         <Separator className="my-1" />

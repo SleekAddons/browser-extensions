@@ -1,4 +1,3 @@
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import EmptyState from '@/components/EmptyState'
 import { Spinner } from '@/components/ui/spinner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -8,7 +7,7 @@ import EndpointCard from './EndpointCard'
 import ChatView from './ChatView'
 import CommandsView from './CommandsView'
 import ItemCounter from '@/components/ItemCounter'
-import { BotMessageSquare, Info, Server, Zap } from 'lucide-react'
+import { BotMessageSquare, Server, Zap } from 'lucide-react'
 import { useState } from 'react'
 import { useScrollable } from '@/lib/useScrollable'
 import { t } from '../lib/i18n'
@@ -138,25 +137,6 @@ export default function LlmClientView(props: { className?: string }) {
 
       <TabsContent value="endpoints" className="flex min-h-0 flex-1 flex-col">
         <div className="flex min-h-0 flex-1 flex-col gap-3">
-          {/* Ollama rejects requests from browser extensions until their origin is allowed */}
-          {(endpoints.length === 0 || endpoints.some((e) => e.provider === 'ollama')) && (
-            <Alert>
-              <Info size={16} />
-              <AlertTitle className="text-base font-semibold">{t('corsTitle')}</AlertTitle>
-              <AlertDescription className='text-balance'>
-                {t('corsDescription')}{' '}
-                <a
-                  href="https://docs.ollama.com/faq#how-can-i-allow-additional-web-origins-to-access-ollama"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline underline-offset-2"
-                >
-                  {t('corsLink')}
-                </a>
-              </AlertDescription>
-            </Alert>
-          )}
-
           <ItemCounter
             count={endpoints.length}
             label={t('endpoints')}

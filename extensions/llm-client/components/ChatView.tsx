@@ -295,7 +295,7 @@ export default function ChatView(props: ChatViewProps) {
         <Alert>
           <Info size={16} />
           <AlertTitle className="text-base font-semibold">{t('historyLimitTitle')}</AlertTitle>
-          <AlertDescription className="text-sm">
+          <AlertDescription className="text-sm text-balance">
             {t('historyLimitDescription', MAX_CONVERSATIONS)}
           </AlertDescription>
         </Alert>
@@ -558,7 +558,7 @@ export default function ChatView(props: ChatViewProps) {
             onPointerDownOutside={(e) => e.preventDefault()}
             onOpenAutoFocus={(e) => e.preventDefault()}
           >
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 text-balance">
               <p className="text-muted-foreground">
                 {hasActualUsage
                   ? t('usageReported')
@@ -642,7 +642,7 @@ export default function ChatView(props: ChatViewProps) {
             onPointerDownOutside={(e) => e.preventDefault()}
             onOpenAutoFocus={(e) => e.preventDefault()}
           >
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 text-balance">
               <p className="text-muted-foreground">
                 {t('includePageDescription')}
               </p>

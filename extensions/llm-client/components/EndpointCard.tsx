@@ -81,7 +81,7 @@ export default function EndpointCard(props: EndpointCardProps) {
       {/* Model list */}
       {!connected && !loading && (
         <Alert variant="destructive">
-          <AlertDescription>
+          <AlertDescription className="text-balance">
             {isOllama
               ? t('connectFailedOllama', endpoint.baseUrl)
               : t('connectFailedOpenai')}
@@ -109,7 +109,7 @@ export default function EndpointCard(props: EndpointCardProps) {
 
       {connected && models.length === 0 && !loading && (
         <Alert>
-          <AlertDescription>
+          <AlertDescription className="text-balance">
             {isOllama
               ? tRich('noModelsOllama', <code>ollama pull</code>)
               : t('noModelsOpenai')}

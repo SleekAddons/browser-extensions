@@ -41,7 +41,7 @@
   "indefinitely": "Unbegrenzt",
   "statQueries": "Anfragen",
   "statBlocked": "Blockiert",
-  "statPercentBlocked": "% blockiert",
+  "statPercentBlocked": "Blockrate",
   "copyDomain": "Domain kopieren",
   "checkingRules": "Regeln werden geprüft…",
   "noRules": "Keine Regeln für diese Domain gefunden.",
