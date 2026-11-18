@@ -121,8 +121,9 @@ export const websiteBlockerScenes: Scene[] = [
       title: 'Website Blocker',
     },
     page: '/blocked.html?domain=social.example.com&reason=schedule',
-    // Float the popup beside the reminder page instead of covering it.
-    ui: { ...POPUP, at: { left: 806, top: 262 } },
+    // Float the popup beside the reminder page instead of covering it, just
+    // under the toolbar like an open popup.
+    ui: { ...POPUP, at: { left: 806, top: 228 } },
     storage: STORAGE,
     ready: READY,
     actions: [{ click: 'role=tab[name="Schedule"]' }, { waitFor: 'text=Work hours' }],

@@ -86,8 +86,11 @@ export interface Scene {
   stageScript?: string
 }
 
-const SPLIT_WINDOW = { width: 728, height: 700, top: 56, scale: 1 }
-const BAND_WINDOW = { width: 1180, height: 692, top: 178, scale: 0.88 }
+// Vertically centred on the 800px canvas.
+const SPLIT_WINDOW = { width: 728, height: 700, top: 50, scale: 1 }
+// Below the headline band (.copy.band in stage.css): the space above the
+// headline, between the subhead and the window, and below the window is even.
+const BAND_WINDOW = { width: 1180, height: 692, top: 152, scale: 0.88 }
 const TOOLBAR_HEIGHT = 84
 
 function icon(component: ComponentType<{ size?: number; strokeWidth?: number }>, size = 16, strokeWidth = 2) {
@@ -186,7 +189,7 @@ function renderPopup(scene: Scene): string {
         ? { left: 500, width: 740, top: 0, height: 800 }
         : scene.layout === 'split-right'
           ? { left: 40, width: 740, top: 0, height: 800 }
-          : { left: 0, width: 1280, top: 176, height: 600 }
+          : { left: 0, width: 1280, top: BAND_WINDOW.top, height: BAND_WINDOW.height * BAND_WINDOW.scale }
     scale = ui.scale ?? Math.min(1.12, (area.height - 64) / ui.height, (area.width - 64) / ui.width)
     left = ui.at?.left ?? area.left + (area.width - ui.width * scale) / 2
     top = ui.at?.top ?? area.top + (area.height - ui.height * scale) / 2
