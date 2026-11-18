@@ -14,13 +14,13 @@ Chat with Ollama, OpenAI, OpenRouter or LM Studio models in a side panel. Summar
 ## Description
 
 ```text
-LLM Client is an AI chat side panel for your browser. Talk to local models on Ollama, or to any OpenAI-compatible API such as OpenAI, OpenRouter, LM Studio, llama.cpp and vLLM. Summarize the page you are reading, ask questions about it, explain code and attach files, all without switching tabs.
+LLM Client is an AI chat side panel for your browser. Talk to local models on Ollama, or to any OpenAI-compatible API. Summarize the page you are reading, ask questions about it, explain code and attach files, all without switching tabs.
 
 WORKS WITH
 • Ollama, local or remote, with an optional auth token
 • OpenAI API with your own API key
 • OpenRouter, LM Studio, llama.cpp server, vLLM and any other server with an OpenAI-compatible /v1 API
-• Every chat model your server offers, such as Llama, Qwen, Gemma, Mistral, DeepSeek or GPT
+• Every chat model your server offers, listed automatically
 
 FEATURES
 • Side panel chat that stays open while you browse, or a quick popup
@@ -28,7 +28,7 @@ FEATURES
 • One-click Summarize and Explain, plus your own reusable prompt commands
 • Attach images for vision models, and text, CSV, JSON, Markdown or code files
 • Streaming replies with Markdown and syntax-highlighted code blocks you can copy
-• Several endpoints side by side, with their models listed automatically
+• Several endpoints side by side
 • Custom system prompt and context size for each endpoint
 • Token meter that shows how much of the context window you have used
 • Chat history kept in your browser (last 100 conversations)
