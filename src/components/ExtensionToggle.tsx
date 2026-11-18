@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
+import { t } from '@/lib/i18n'
 
 type ToggleVariant = 'enabled' | 'disabled' | 'warning'
 
@@ -50,19 +51,19 @@ const variantStyles = {
     container: 'dark:bg-primary/5',
     icon: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-500',
     label: 'text-emerald-600 dark:text-emerald-500',
-    defaultLabel: 'Enabled',
+    defaultLabel: 'statusEnabled',
   },
   disabled: {
     container: 'bg-muted/50 dark:bg-muted/40',
     icon: 'bg-muted text-muted-foreground',
     label: 'text-muted-foreground',
-    defaultLabel: 'Disabled',
+    defaultLabel: 'statusDisabled',
   },
   warning: {
     container: 'bg-muted/50 dark:bg-muted/40',
     icon: 'bg-yellow-500/15 text-yellow-500 dark:text-yellow-600',
     label: 'text-yellow-500 dark:text-yellow-600',
-    defaultLabel: 'Warning',
+    defaultLabel: 'statusWarning',
   },
 } as const
 
@@ -164,7 +165,7 @@ export default function ExtensionToggle(props: ExtensionToggleComponentProps) {
           'text-base font-semibold leading-none',
           styles.label,
         )}>
-          {statusLabel ?? styles.defaultLabel}
+          {statusLabel ?? t(styles.defaultLabel)}
         </span>
         {description && (
           <span className="leading-tight text-sm text-muted-foreground">

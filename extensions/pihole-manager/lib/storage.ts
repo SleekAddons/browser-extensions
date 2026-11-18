@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser'
 import type { PiholeInstance } from './types'
+import { t } from './i18n'
 
 const STORAGE_KEY = 'pihole_instances'
 
@@ -26,7 +27,7 @@ export async function addInstance(instance: PiholeInstance): Promise<PiholeInsta
 export async function updateInstance(id: string, data: Partial<Omit<PiholeInstance, 'id'>>): Promise<PiholeInstance[]> {
   const instances = await loadInstances()
   const idx = instances.findIndex((i) => i.id === id)
-  if (idx === -1) throw new Error('Instance not found')
+  if (idx === -1) throw new Error(t('instanceNotFound'))
   instances[idx] = { ...instances[idx], ...data }
   await saveInstances(instances)
   return instances

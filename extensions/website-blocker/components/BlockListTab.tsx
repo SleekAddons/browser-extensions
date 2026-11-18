@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Globe, Pencil, Trash2, X } from 'lucide-react'
-import prettyMilliseconds from 'pretty-ms'
 import ContentCard from '@/components/ContentCard'
 import StatsGrid from '@/components/StatsGrid'
 import ExtensionToggle from '@/components/ExtensionToggle'
@@ -22,6 +21,8 @@ import type {
   TrackingState,
 } from '../lib/types'
 import { elapsedTrackingSeconds, todayStr } from '../lib/usage'
+import { formatDuration } from '@/lib/i18n'
+import { t } from '../lib/i18n'
 
 interface BlockListTabProps {
   rules: BlockRule[]
@@ -101,28 +102,17 @@ export default function BlockListTab({
     setEditAutoIdentifyWww(true)
   }
 
-  const label = mode === 'blocklist' ? 'block' : 'allow'
-
-  const formatDuration = (totalSeconds: number) => {
-    const ms = Math.max(0, Math.floor(totalSeconds)) * 1000
-    if (ms === 0) return '0s'
-
-    return prettyMilliseconds(ms, {
-      secondsDecimalDigits: 0,
-    })
-  }
-
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
       <ItemCounter
         count={rules.length}
-        label={mode === 'blocklist' ? 'Blocked Sites' : 'Allowed Sites'}
+        label={mode === 'blocklist' ? t('blockedSites') : t('allowedSites')}
         onAdd={() => {
           setShowAdd(true)
           setEditingId(null)
           resetAdd()
         }}
-        addLabel="Site"
+        addTitle={t('addSite')}
       />
 
       <div className="min-h-0 flex-1">
@@ -132,8 +122,8 @@ export default function BlockListTab({
         >
           {showAdd && (
             <ContentCard
-              title="New Site Rule"
-              description={`Add a site to ${label}.`}
+              title={t('newSiteRule')}
+              description={mode === 'blocklist' ? t('addSiteToBlock') : t('addSiteToAllow')}
               action={
                 <Button
                   type="button"
@@ -157,7 +147,7 @@ export default function BlockListTab({
                 }}
               >
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="site-rule-domain-add">Domain</Label>
+                  <Label htmlFor="site-rule-domain-add">{t('domain')}</Label>
                   <Input
                     id="site-rule-domain-add"
                     placeholder="example.com"
@@ -166,7 +156,7 @@ export default function BlockListTab({
                     autoComplete="off"
                     inputMode="url"
                   />
-                  <p className="text-xs text-muted-foreground">Enter a hostname or domain pattern.</p>
+                  <p className="text-xs text-muted-foreground">{t('domainHint')}</p>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -176,7 +166,7 @@ export default function BlockListTab({
                     onCheckedChange={(checked) => setAutoIdentifyWww(Boolean(checked))}
                   />
                   <Label htmlFor="site-auto-www-add" className="leading-5">
-                    Auto-identify website with and without www
+                    {t('autoWww')}
                   </Label>
                 </div>
 
@@ -192,10 +182,10 @@ export default function BlockListTab({
                       resetAdd()
                     }}
                   >
-                    Cancel
+                    {t('cancel')}
                   </Button>
                   <Button type="submit" disabled={!input.trim()} className="flex-1">
-                    Add Site
+                    {t('addSite')}
                   </Button>
                 </div>
               </form>
@@ -205,8 +195,8 @@ export default function BlockListTab({
           {rules.length === 0 && !showAdd ? (
             <EmptyState
               icon={<Globe />}
-              title={`No ${mode === 'blocklist' ? 'blocked' : 'allowed'} sites yet.`}
-              description={`Add domains above to get started.`}
+              title={mode === 'blocklist' ? t('noBlockedSites') : t('noAllowedSites')}
+              description={t('noSitesDescription')}
             />
           ) : (
             orderedRules.map((rule) => {
@@ -230,7 +220,7 @@ export default function BlockListTab({
                 return (
                   <ContentCard
                     key={rule.id}
-                    title="Edit Site Rule"
+                    title={t('editSiteRule')}
                     action={
                       <Button
                         type="button"
@@ -251,7 +241,7 @@ export default function BlockListTab({
                       }}
                     >
                       <div className="flex flex-col gap-1.5">
-                        <Label htmlFor={`site-rule-domain-edit-${rule.id}`}>Domain</Label>
+                        <Label htmlFor={`site-rule-domain-edit-${rule.id}`}>{t('domain')}</Label>
                         <Input
                           id={`site-rule-domain-edit-${rule.id}`}
                           placeholder="example.com"
@@ -260,7 +250,7 @@ export default function BlockListTab({
                           autoComplete="off"
                           inputMode="url"
                         />
-                        <p className="text-xs text-muted-foreground">Enter a hostname or domain pattern.</p>
+                        <p className="text-xs text-muted-foreground">{t('domainHint')}</p>
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -270,7 +260,7 @@ export default function BlockListTab({
                           onCheckedChange={(checked) => setEditAutoIdentifyWww(Boolean(checked))}
                         />
                         <Label htmlFor={`site-auto-www-edit-${rule.id}`} className="leading-5">
-                          Auto-identify website with and without www
+                          {t('autoWww')}
                         </Label>
                       </div>
 
@@ -283,14 +273,14 @@ export default function BlockListTab({
                           className="flex-1"
                           onClick={closeEdit}
                         >
-                          Cancel
+                          {t('cancel')}
                         </Button>
                         <Button
                           type="submit"
                           className="flex-1"
                           disabled={!editInput.trim()}
                         >
-                          Save
+                          {t('save')}
                         </Button>
                       </div>
                     </form>
@@ -309,7 +299,7 @@ export default function BlockListTab({
                         variant="ghost"
                         size="icon-sm"
                         onClick={() => startEditing(rule)}
-                        title="Edit rule"
+                        title={t('editRule')}
                       >
                         <Pencil size={12} />
                       </Button>
@@ -318,7 +308,7 @@ export default function BlockListTab({
                         variant="ghost"
                         size="icon-sm"
                         onClick={() => onRemoveRule(rule.id)}
-                        title="Remove rule"
+                        title={t('removeRule')}
                       >
                         <Trash2 size={14} />
                       </Button>
@@ -331,8 +321,8 @@ export default function BlockListTab({
                     items={[
                       {
                         icon: <Globe size={14} />,
-                        label: rule.enabled ? 'Rule enabled' : 'Rule disabled',
-                        description: rule.enabled ? 'Rule is active' : 'Rule is paused',
+                        label: rule.enabled ? t('ruleEnabled') : t('ruleDisabled'),
+                        description: rule.enabled ? t('ruleActive') : t('rulePaused'),
                         checked: rule.enabled,
                         onChange: (checked) => onToggleRule(rule.id, checked),
                       },
@@ -341,9 +331,9 @@ export default function BlockListTab({
                   <StatsGrid
                     columns={3}
                     items={[
-                      { label: 'Blocked Visits', value: blockedCount.toLocaleString() },
-                      { label: 'Allowed Visits', value: visits.toLocaleString() },
-                      { label: 'Time Spent', value: formatDuration(secondsSpent) },
+                      { label: t('statBlockedVisits'), value: blockedCount.toLocaleString() },
+                      { label: t('statAllowedVisits'), value: visits.toLocaleString() },
+                      { label: t('statTimeSpent'), value: formatDuration(secondsSpent) },
                     ]}
                   />
                   <div className="grid grid-cols-2 gap-2">
@@ -356,7 +346,7 @@ export default function BlockListTab({
                       {hasLimit && (
                         <span className="mr-1 size-1.5 rounded-full bg-current" aria-hidden="true" />
                       )}
-                      {hasLimit ? 'Edit Limit' : 'Add Limit'}
+                      {hasLimit ? t('editLimit') : t('addLimit')}
                     </Button>
                     <Button
                       type="button"
@@ -367,7 +357,7 @@ export default function BlockListTab({
                       {hasSchedule && (
                         <span className="mr-0.5 size-1.5 rounded-full bg-current" aria-hidden="true" />
                       )}
-                      {hasSchedule ? 'Edit Schedule' : 'Add Schedule'}
+                      {hasSchedule ? t('editSchedule') : t('addSchedule')}
                     </Button>
                   </div>
                 </ContentCard>

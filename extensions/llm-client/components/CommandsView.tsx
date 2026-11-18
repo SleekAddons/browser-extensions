@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator'
 import { X, Pencil, Trash2, Zap } from 'lucide-react'
 import EmptyState from '@/components/EmptyState'
 import { useScrollable } from '@/lib/useScrollable'
+import { t } from '../lib/i18n'
 
 interface CommandsViewProps {
   commands: ChatCommand[]
@@ -83,7 +84,7 @@ export default function CommandsView(props: CommandsViewProps) {
         <div className="flex flex-col gap-3">
           {showAdd ? (
             <ContentCard
-              title="New Command"
+              title={t('newCommand')}
               action={
                 <Button
                   type="button"
@@ -98,20 +99,20 @@ export default function CommandsView(props: CommandsViewProps) {
               <form onSubmit={handleAdd} className="flex flex-col gap-3">
 
                   <div className="flex flex-col gap-1.5">
-                    <Label className="">Name</Label>
+                    <Label className="">{t('name')}</Label>
                     <Input
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. Explain"
+                      placeholder={t('commandNamePlaceholder')}
                       autoFocus
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <Label className="">System Prompt</Label>
+                    <Label className="">{t('systemPrompt')}</Label>
                     <Textarea
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
-                      placeholder="e.g. Explain the following in simple terms."
+                      placeholder={t('commandPromptPlaceholder')}
                       className="min-h-[60px]"
                       rows={3}
                     />
@@ -124,7 +125,7 @@ export default function CommandsView(props: CommandsViewProps) {
                     disabled={!name.trim() || !prompt.trim() || submitting}
                     className="w-full"
                   >
-                    Add Command
+                    {t('addCommand')}
                   </Button>
                 </form>
             </ContentCard>
@@ -133,8 +134,8 @@ export default function CommandsView(props: CommandsViewProps) {
           {userCommands.length === 0 && !showAdd && (
             <EmptyState
               icon={<Zap />}
-              title="No commands configured."
-              description="Add reusable prompt instructions."
+              title={t('noCommandsTitle')}
+              description={t('noCommandsDescription')}
             />
           )}
 
@@ -143,7 +144,7 @@ export default function CommandsView(props: CommandsViewProps) {
               return (
                 <ContentCard
                   key={cmd.id}
-                  title="Edit Command"
+                  title={t('editCommand')}
                   action={
                     <Button
                       type="button"
@@ -158,20 +159,20 @@ export default function CommandsView(props: CommandsViewProps) {
                   <form onSubmit={handleEdit} className="flex flex-col gap-3">
 
                       <div className="flex flex-col gap-1.5">
-                        <Label className="">Name</Label>
+                        <Label className="">{t('name')}</Label>
                         <Input
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          placeholder="e.g. Explain"
+                          placeholder={t('commandNamePlaceholder')}
                           autoFocus
                         />
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <Label className="">System Prompt</Label>
+                        <Label className="">{t('systemPrompt')}</Label>
                         <Textarea
                           value={prompt}
                           onChange={(e) => setPrompt(e.target.value)}
-                          placeholder="e.g. Explain the following in simple terms."
+                          placeholder={t('commandPromptPlaceholder')}
                           className="min-h-[60px]"
                           rows={3}
                         />
@@ -186,10 +187,10 @@ export default function CommandsView(props: CommandsViewProps) {
                           className="flex-1"
                           onClick={cancelEditing}
                         >
-                          Cancel
+                          {t('cancel')}
                         </Button>
                         <Button type="submit" disabled={!name.trim() || !prompt.trim() || submitting} className="flex-1">
-                          {submitting ? 'Saving…' : 'Save'}
+                          {submitting ? t('saving') : t('save')}
                         </Button>
                       </div>
                     </form>
@@ -203,25 +204,25 @@ export default function CommandsView(props: CommandsViewProps) {
                 title={cmd.name}
                 action={
                   cmd.system ? (
-                    <span className="text-muted-foreground italic">System</span>
+                    <span className="text-muted-foreground italic">{t('systemCommand')}</span>
                   ) : (
                     <div className="flex items-center gap-1.5">
                       <Button
                         variant="ghost"
                         size="icon-sm"
                         onClick={() => startEditing(cmd)}
-                        title="Edit command"
+                        title={t('editCommandTooltip')}
                       >
                         <Pencil size={12} />
                       </Button>
                       <DeleteDialog
                         trigger={
-                          <Button variant="ghost" size="icon-sm" title="Delete command">
+                          <Button variant="ghost" size="icon-sm" title={t('deleteCommandTooltip')}>
                             <Trash2 size={12} />
                           </Button>
                         }
-                        entityName="command"
-                        description={`This will permanently delete the "${cmd.name}" command.`}
+                        title={t('deleteCommandTitle')}
+                        description={t('deleteCommandDescription', cmd.name)}
                         onConfirm={() => onDelete(cmd.id)}
                       />
                     </div>

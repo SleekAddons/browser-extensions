@@ -4,6 +4,7 @@
 
 import type { Endpoint, ModelInfo, RequestMessage, TokenUsage } from './types'
 import { apiUrl, authHeaders, readJson, readLines, requestError } from './http'
+import { t } from './i18n'
 
 /** Streaming chunk from /api/chat */
 interface ChatChunk {
@@ -27,7 +28,7 @@ export async function listModels(endpoint: Endpoint, signal?: AbortSignal): Prom
   })
 
   if (!res.ok) {
-    throw requestError('Failed to fetch models', res.status, await res.text().catch(() => ''))
+    throw requestError(t('fetchModelsFailed'), res.status, await res.text().catch(() => ''))
   }
 
   const data = (await readJson(res)) as { models?: { name: string; size?: number }[] | null }
@@ -67,11 +68,11 @@ export async function streamChat(
   })
 
   if (!res.ok) {
-    throw requestError('Chat request failed', res.status, await res.text().catch(() => ''))
+    throw requestError(t('chatRequestFailed'), res.status, await res.text().catch(() => ''))
   }
 
   if (!res.body) {
-    throw new Error('No response body - streaming not supported')
+    throw new Error(t('noResponseBody'))
   }
 
   let tokenUsage: TokenUsage | null = null

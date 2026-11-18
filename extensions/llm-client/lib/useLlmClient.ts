@@ -41,6 +41,7 @@ import {
   addTokenUsage,
   resetTokenUsage,
 } from './storage'
+import { t } from './i18n'
 
 /** How long to wait for an endpoint's model list before giving up. */
 const CONNECT_TIMEOUT_MS = 5000
@@ -49,7 +50,7 @@ const CONNECT_TIMEOUT_MS = 5000
 function connectionError(err: unknown, fallback: string): string {
   // Network failures surface as TypeError, timeouts as TimeoutError.
   if (err instanceof TypeError || (err instanceof Error && err.name === 'TimeoutError')) {
-    return 'Cannot reach server'
+    return t('cannotReachServer')
   }
   return err instanceof Error ? err.message : fallback
 }
@@ -139,7 +140,7 @@ export function useLlmClient() {
       } catch (err) {
         updateState(id, {
           loading: false,
-          error: connectionError(err, 'Connection failed'),
+          error: connectionError(err, t('connectionFailed')),
         })
       }
     },
@@ -160,7 +161,7 @@ export function useLlmClient() {
       } catch (err) {
         updateState(id, {
           loading: false,
-          error: connectionError(err, 'Refresh failed'),
+          error: connectionError(err, t('refreshFailed')),
         })
       }
     },
@@ -244,7 +245,7 @@ export function useLlmClient() {
         id: crypto.randomUUID(),
         endpointId,
         model,
-        title: 'New Chat',
+        title: t('newChatTitle'),
         messages: [],
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -421,7 +422,7 @@ export function useLlmClient() {
           ? content.slice(0, 50) + (content.length > 50 ? '…' : '')
           : hasAttachments
             ? attachments.map((a) => a.name).join(', ').slice(0, 50)
-            : (commands.find((c) => c.id === (tempCommandIds ?? chatOptions.activeCommandIds)[0])?.name ?? 'Command')
+            : (commands.find((c) => c.id === (tempCommandIds ?? chatOptions.activeCommandIds)[0])?.name ?? t('command'))
         : conversation.title
 
       conversation = {
@@ -577,7 +578,8 @@ export function useLlmClient() {
           // Add error as a system-level message for display
           const errorMessage: ChatMessage = {
             role: 'assistant',
-            content: `Error: ${err instanceof Error ? err.message : 'Request failed'}`,
+            content: t('chatError', err instanceof Error ? err.message : t('requestFailed')),
+            error: true,
           }
           conversation = {
             ...conversation,

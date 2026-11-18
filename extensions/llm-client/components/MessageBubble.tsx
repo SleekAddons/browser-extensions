@@ -3,19 +3,10 @@ import { Streamdown } from 'streamdown'
 import { code } from '@streamdown/code'
 import { codeBlockComponents } from './CodeBlock'
 import { Bot, User, FileText, TriangleAlert, Image, File } from 'lucide-react'
+import { formatApproxTokens, formatFileSize } from '../lib/format'
+import { t } from '../lib/i18n'
 
 const plugins = { code }
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
-function formatTokenCount(tokens: number): string {
-  if (tokens >= 1000) return `${(tokens / 1000).toFixed(1)}k`
-  return String(tokens)
-}
 
 interface MessageBubbleProps {
   message: ChatMessage
@@ -25,7 +16,8 @@ interface MessageBubbleProps {
 export default function MessageBubble(props: MessageBubbleProps) {
   const { message, isStreaming } = props
   const isUser = message.role === 'user'
-  const isError = message.role === 'assistant' && message.content.startsWith('Error: ')
+  // Errors saved before the `error` flag existed start with "Error: ".
+  const isError = message.role === 'assistant' && (message.error || message.content.startsWith('Error: '))
 
   return (
     <div className={`flex gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -88,10 +80,10 @@ export default function MessageBubble(props: MessageBubbleProps) {
               <FileText size={10} className="shrink-0" />
             )}
             <span className="truncate max-w-[180px]" title={message.pageContext.title}>
-              {message.pageContext.title || 'Page content'}
+              {message.pageContext.title || t('pageContent')}
             </span>
             <span className="shrink-0 opacity-60">
-              ~{formatTokenCount(message.pageContext.tokens)} tokens
+              {formatApproxTokens(message.pageContext.tokens)}
             </span>
           </div>
         )}

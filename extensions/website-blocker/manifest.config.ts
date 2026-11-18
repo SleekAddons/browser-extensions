@@ -2,8 +2,9 @@ import pkg from '../../package.json'
 import type { UserManifest } from 'wxt'
 
 export default {
-  name: 'Website Blocker',
-  description: 'Block distracting websites with scheduled rules and usage stats',
+  name: '__MSG_extName__',
+  description: '__MSG_extDescription__',
+  default_locale: 'en',
   version: pkg.version,
   icons: {
     16: 'icon16.png',

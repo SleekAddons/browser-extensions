@@ -7,6 +7,7 @@ import { RefreshCw } from 'lucide-react'
 import TableList from './TableList'
 import ExportPanel from './ExportPanel'
 import DataPreview from './DataPreview'
+import { t } from '../lib/i18n'
 
 export default function TableExtractorView() {
   const {
@@ -30,14 +31,14 @@ export default function TableExtractorView() {
     <div className="flex flex-col gap-3">
       {accessBlocked && (
         <ContentCard
-          title="Cannot access this page"
-          description="This extension only works on regular web pages."
+          title={t('accessBlockedTitle')}
+          description={t('accessBlockedDescription')}
         />
       )}
 
       {error && (
         <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
+          <AlertTitle>{t('error')}</AlertTitle>
           <AlertDescription className="break-words">{error}</AlertDescription>
         </Alert>
       )}

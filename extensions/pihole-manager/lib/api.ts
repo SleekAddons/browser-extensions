@@ -12,11 +12,12 @@ import type {
   PiholeHistoryEntry,
   DomainSearchResult,
 } from './types'
+import { t } from './i18n'
 
 /** Thrown when the Pi-hole rejects the session ID (HTTP 401). */
 export class SessionExpiredError extends Error {
   constructor() {
-    super('Session expired')
+    super(t('sessionExpired'))
     this.name = 'SessionExpiredError'
   }
 }
@@ -38,11 +39,11 @@ export async function authenticate(
   })
 
   if (!res.ok) {
-    if (res.status === 401) throw new Error('Invalid password')
+    if (res.status === 401) throw new Error(t('invalidPassword'))
     if (res.status === 429) {
-      throw new Error('Too many active API sessions on this Pi-hole. Wait for old sessions to expire, then refresh.')
+      throw new Error(t('tooManySessions'))
     }
-    throw new Error(`Authentication failed (${res.status})`)
+    throw new Error(t('authFailedStatus', res.status))
   }
 
   const data = await res.json()
@@ -67,7 +68,7 @@ export async function getSummary(
   })
 
   if (res.status === 401) throw new SessionExpiredError()
-  if (!res.ok) throw new Error(`Failed to fetch summary (${res.status})`)
+  if (!res.ok) throw new Error(t('fetchSummaryFailed', res.status))
 
   return (await res.json()) as PiholeSummary
 }
@@ -82,7 +83,7 @@ export async function getBlockingStatus(
   })
 
   if (res.status === 401) throw new SessionExpiredError()
-  if (!res.ok) throw new Error(`Failed to fetch blocking status (${res.status})`)
+  if (!res.ok) throw new Error(t('fetchBlockingFailed', res.status))
 
   return (await res.json()) as PiholeBlockingStatus
 }
@@ -97,7 +98,7 @@ export async function getHistory(
   })
 
   if (res.status === 401) throw new SessionExpiredError()
-  if (!res.ok) throw new Error(`Failed to fetch history (${res.status})`)
+  if (!res.ok) throw new Error(t('fetchHistoryFailed', res.status))
 
   const data = await res.json()
   return (data.history ?? []) as PiholeHistoryEntry[]
@@ -123,7 +124,7 @@ export async function setBlocking(
   })
 
   if (res.status === 401) throw new SessionExpiredError()
-  if (!res.ok) throw new Error(`Failed to set blocking (${res.status})`)
+  if (!res.ok) throw new Error(t('setBlockingFailed', res.status))
 
   return (await res.json()) as PiholeBlockingStatus
 }
@@ -147,7 +148,7 @@ export async function addDomain(
   if (res.status === 401) throw new SessionExpiredError()
   if (!res.ok) {
     const data = await res.json().catch(() => null)
-    const msg = data?.error?.message ?? `Failed to add domain (${res.status})`
+    const msg = data?.error?.message ?? t('addDomainFailed', res.status)
     throw new Error(msg)
   }
 }
@@ -163,7 +164,7 @@ export async function searchDomain(
   })
 
   if (res.status === 401) throw new SessionExpiredError()
-  if (!res.ok) throw new Error(`Failed to search domain (${res.status})`)
+  if (!res.ok) throw new Error(t('searchDomainFailed', res.status))
 
   const data = await res.json()
   const search = data.search ?? {}
@@ -201,6 +202,6 @@ export async function removeDomain(
   })
 
   if (res.status === 401) throw new SessionExpiredError()
-  if (res.status === 404) throw new Error('Domain not found in list')
-  if (!res.ok) throw new Error(`Failed to remove domain (${res.status})`)
+  if (res.status === 404) throw new Error(t('domainNotInList'))
+  if (!res.ok) throw new Error(t('removeDomainFailed', res.status))
 }

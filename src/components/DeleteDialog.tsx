@@ -10,16 +10,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { t } from '@/lib/i18n'
 
 interface DeleteDialogProps {
   /** The trigger element that opens the dialog */
   trigger: ReactNode
-  /** Dialog title - defaults to "Delete {entityName}?" */
+  /** Dialog title, e.g. "Delete schedule?" (defaults to "Delete item?") */
   title?: string
   /** Dialog description - defaults to a generic warning */
   description?: string
-  /** Human-readable entity name used in default title/description (e.g. "instance") */
-  entityName?: string
   /** Label for the confirm button - defaults to "Delete" */
   confirmLabel?: string
   /** Called when the user confirms deletion */
@@ -33,19 +32,13 @@ interface DeleteDialogProps {
 export default function DeleteDialog(props: DeleteDialogProps) {
   const {
     trigger,
-    title,
-    description,
-    entityName = 'item',
-    confirmLabel = 'Delete',
+    title = t('deleteItemTitle'),
+    description = t('deleteItemDescription'),
+    confirmLabel = t('delete'),
     onConfirm,
     open,
     onOpenChange,
   } = props
-
-  const resolvedTitle = title ?? `Delete ${entityName}?`
-  const resolvedDescription =
-    description ??
-    `This will permanently delete this ${entityName}. This action cannot be undone.`
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -54,15 +47,15 @@ export default function DeleteDialog(props: DeleteDialogProps) {
         <AlertDialogHeader>
           <div className="mb-1 flex items-center gap-2 text-destructive">
             <AlertDialogTitle className="break-all">
-              {resolvedTitle}
+              {title}
             </AlertDialogTitle>
           </div>
           <AlertDialogDescription className="break-all text-balance">
-            {resolvedDescription}
+            {description}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel size="sm">Cancel</AlertDialogCancel>
+          <AlertDialogCancel size="sm">{t('cancel')}</AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
             size="sm"

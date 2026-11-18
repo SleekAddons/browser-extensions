@@ -5,6 +5,7 @@ import OptionPicker from '@/components/OptionPicker'
 import type { ExportFormat, TableData } from '../lib/types'
 import { downloadExport, exportTable } from '../lib/exporters'
 import { Download, Copy, Check } from 'lucide-react'
+import { t } from '../lib/i18n'
 
 const FORMAT_OPTIONS: { value: ExportFormat; label: string }[] = [
   { value: 'json', label: 'JSON' },
@@ -43,8 +44,8 @@ export default function ExportPanel(props: ExportPanelProps) {
 
   return (
     <ContentCard
-      title="Export"
-      description={disabled ? 'Select a table to enable export' : 'Choose a format and download or copy'}
+      title={t('exportTitle')}
+      description={disabled ? t('exportDisabledDescription') : t('exportDescription')}
     >
       <div className={`flex flex-col gap-3${disabled ? ' pointer-events-none opacity-40' : ''}`}>
         <OptionPicker
@@ -54,11 +55,11 @@ export default function ExportPanel(props: ExportPanelProps) {
         />
         <div className="flex gap-2 border-t pt-3 -mx-4 px-4">
           <Button size="sm" disabled={disabled} onClick={handleDownload} className="flex-1">
-            <Download size={14} /> Download .{format}
+            <Download size={14} /> {t('download', format)}
           </Button>
           <Button size="sm" variant="outline" disabled={disabled || format === 'xlsx'} onClick={handleCopy} className="flex-1">
             {copied ? <Check size={14} /> : <Copy size={14} />}
-            {copied ? 'Copied!' : 'Copy'}
+            {copied ? t('copied') : t('copy')}
           </Button>
         </div>
       </div>

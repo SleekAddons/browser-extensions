@@ -9,6 +9,7 @@ import { ShieldAlert, ShieldCheck, ShieldOff } from 'lucide-react'
 import EmptyState from '@/components/EmptyState'
 import { useState } from 'react'
 import { useScrollable } from '@/lib/useScrollable'
+import { t, tPlural } from '../lib/i18n'
 
 export default function PiholeManagerView(props: { className?: string }) {
   const {
@@ -46,13 +47,13 @@ export default function PiholeManagerView(props: { className?: string }) {
           onToggle={(checked) => toggleAllBlocking(checked)}
           disabled={anyLoading}
           variant={allEnabled ? 'enabled' : allDisabled ? 'disabled' : 'warning'}
-          statusLabel="Global switch"
+          statusLabel={t('globalSwitch')}
           description={
             allEnabled
-              ? `All ${connectedStates.length} instance${connectedStates.length === 1 ? '' : 's'} enabled`
+              ? tPlural('allInstancesEnabled', connectedStates.length)
               : allDisabled
-                ? `All ${connectedStates.length} instance${connectedStates.length === 1 ? '' : 's'} disabled`
-                : 'Some instances disabled'
+                ? tPlural('allInstancesDisabled', connectedStates.length)
+                : t('someInstancesDisabled')
           }
           enabledIcon={<ShieldCheck size={14} />}
           disabledIcon={<ShieldOff size={14} />}
@@ -62,9 +63,9 @@ export default function PiholeManagerView(props: { className?: string }) {
 
       <ItemCounter
         count={instances.length}
-        label="Instances"
+        label={t('instances')}
         onAdd={() => setShowAddInstance(true)}
-        addLabel="Instance"
+        addTitle={t('addInstance')}
       />
 
       <div
@@ -77,15 +78,15 @@ export default function PiholeManagerView(props: { className?: string }) {
           {loading && (
             <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
               <Spinner className="size-3.5" />
-              Loading instances…
+              {t('loadingInstances')}
             </div>
           )}
 
           {!loading && instances.length === 0 && !showAddInstance && (
             <EmptyState
               icon={<ShieldAlert />}
-              title="No Pi-hole instances configured."
-              description="Add one to get started."
+              title={t('noInstancesTitle')}
+              description={t('noInstancesDescription')}
             />
           )}
 

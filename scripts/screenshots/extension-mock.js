@@ -9,7 +9,9 @@
  * that need a content script.
  *
  * `window.__SCREENSHOT_MOCK__` holds the scene data:
- *   manifest  built manifest.json
+ *   manifest  built manifest.json, with __MSG_…__ placeholders filled in
+ *   messages  { key: text } from the build's _locales/<locale>/messages.json
+ *   uiLanguage  what i18n.getUILanguage() returns, e.g. 'en-US'
  *   theme     'light' | 'dark' (written to the shared useTheme() key)
  *   tab       the "active tab" returned by tabs.query()
  *   storage   { local, sync, session } initial contents
@@ -25,6 +27,10 @@
   if (!data) return
 
   const clone = (value) => (value === undefined ? undefined : JSON.parse(JSON.stringify(value)))
+  // Message names are case-insensitive in the browsers.
+  const messages = Object.fromEntries(
+    Object.entries(data.messages ?? {}).map(([key, text]) => [key.toLowerCase(), text]),
+  )
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
   function createEvent() {
@@ -233,8 +239,14 @@
         getSessionRules: async () => [],
       },
       i18n: {
-        getMessage: () => '',
-        getUILanguage: () => 'en-US',
+        getMessage: (name, substitutions) => {
+          const text = messages[String(name).toLowerCase()]
+          if (text === undefined) return ''
+          const values = substitutions == null ? [] : [].concat(substitutions).map(String)
+          // $1…$9 take the substitutions and $$ is a dollar sign, as in Chrome.
+          return text.replace(/\$([1-9])|\$\$/g, (_match, index) => (index ? values[index - 1] ?? '' : '$'))
+        },
+        getUILanguage: () => data.uiLanguage ?? 'en-US',
       },
     }
 

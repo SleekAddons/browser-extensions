@@ -2,6 +2,8 @@
  * Fetch helpers shared by the Ollama and OpenAI-compatible API clients.
  */
 
+import { t } from './i18n'
+
 /** Join a base URL and an API path, keeping any query string on the base URL. */
 export function apiUrl(baseUrl: string, path: string): string {
   const url = new URL(baseUrl)
@@ -43,7 +45,7 @@ export function requestError(action: string, status: number, body: string): Erro
     // Not JSON: fall back to the raw text (e.g. a proxy's error page)
   }
   detail ??= body.trim().replace(/\s+/g, ' ').slice(0, 300)
-  return new Error(`${action} (${status})${detail ? `: ${detail}` : ''}`)
+  return new Error(detail ? t('httpErrorDetail', action, status, detail) : t('httpError', action, status))
 }
 
 /** Parse a JSON response body, with a readable error when it is something else. */
@@ -52,7 +54,7 @@ export async function readJson(res: Response): Promise<unknown> {
   try {
     return JSON.parse(text)
   } catch {
-    throw new Error('Unexpected response from server (not JSON). Check the URL.')
+    throw new Error(t('notJson'))
   }
 }
 

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { X } from 'lucide-react'
+import { t } from '../lib/i18n'
 
 interface EditInstanceDialogProps {
   instance: PiholeInstance
@@ -37,15 +38,15 @@ export default function EditInstanceDialog(props: EditInstanceDialogProps) {
     setError(null)
 
     if (!name.trim()) {
-      setError('Name is required')
+      setError(t('nameRequired'))
       return
     }
     if (!baseUrl.trim() || (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://'))) {
-      setError('Enter a valid URL (http:// or https://)')
+      setError(t('urlInvalid'))
       return
     }
     if (!password.trim()) {
-      setError('Password is required')
+      setError(t('passwordRequired'))
       return
     }
 
@@ -58,7 +59,7 @@ export default function EditInstanceDialog(props: EditInstanceDialogProps) {
       })
       onOpenChange(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save instance')
+      setError(err instanceof Error ? err.message : t('saveInstanceFailed'))
     } finally {
       setSubmitting(false)
     }
@@ -68,7 +69,7 @@ export default function EditInstanceDialog(props: EditInstanceDialogProps) {
 
   return (
     <ContentCard
-      title="Edit Pi-hole Instance"
+      title={t('editInstanceTitle')}
       action={
         <Button
           type="button"
@@ -82,10 +83,10 @@ export default function EditInstanceDialog(props: EditInstanceDialogProps) {
     >
       <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="ph-edit-name">Name</Label>
+            <Label htmlFor="ph-edit-name">{t('name')}</Label>
             <Input
               id="ph-edit-name"
-              placeholder="Home Pi-hole"
+              placeholder={t('namePlaceholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoComplete="off"
@@ -93,7 +94,7 @@ export default function EditInstanceDialog(props: EditInstanceDialogProps) {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="ph-edit-url">URL</Label>
+            <Label htmlFor="ph-edit-url">{t('url')}</Label>
             <Input
               id="ph-edit-url"
               placeholder="https://pi.hole"
@@ -102,11 +103,11 @@ export default function EditInstanceDialog(props: EditInstanceDialogProps) {
               inputMode="url"
               autoComplete="url"
             />
-            <p className="text-xs text-muted-foreground">Use the base address of your Pi-hole instance.</p>
+            <p className="text-xs text-muted-foreground">{t('urlHint')}</p>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="ph-edit-password">API Password</Label>
+            <Label htmlFor="ph-edit-password">{t('apiPassword')}</Label>
             <Input
               id="ph-edit-password"
               type="password"
@@ -130,10 +131,10 @@ export default function EditInstanceDialog(props: EditInstanceDialogProps) {
               className="flex-1"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button type="submit" disabled={submitting} className="flex-1">
-              {submitting ? 'Saving…' : 'Save'}
+              {submitting ? t('saving') : t('save')}
             </Button>
           </div>
         </form>

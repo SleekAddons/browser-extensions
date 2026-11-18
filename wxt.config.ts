@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'wxt'
 import { extensions, defaultExtension } from './extensions/registry'
+import { buildLocales } from './extensions/locales'
 
 const ext = process.env.EXT ?? defaultExtension
 const manifest = extensions[ext]
@@ -47,12 +48,21 @@ export default defineConfig({
     return manifest
   },
   hooks: {
-    'build:publicAssets'(_wxt, files) {
+    'build:publicAssets'(wxt, files) {
       // Store-listing promo tiles live next to the icons in public/ but are
       // never used at runtime, so keep them out of the extension package.
       for (let i = files.length - 1; i >= 0; i--) {
         if (/^promo-[^/]*\.png$/.test(files[i].relativeDest)) files.splice(i, 1)
       }
+
+      // Translations: _locales/<locale>/messages.json, merged from
+      // src/locales and extensions/<name>/locales (see extensions/locales.ts).
+      const locales = buildLocales(ext)
+      for (const warning of locales.warnings) wxt.logger.warn(`Translation: ${warning}`)
+      if (locales.errors.length) {
+        throw new Error(`Invalid translations:\n  ${locales.errors.join('\n  ')}`)
+      }
+      files.push(...locales.files)
     },
     'build:manifestGenerated'(_wxt, manifest) {
       // Prevent Firefox from injecting its extension.css into the sidebar.

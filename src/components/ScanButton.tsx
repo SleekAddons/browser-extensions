@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import { t } from '@/lib/i18n'
 
 interface ScanButtonProps {
   /** Button label when idle */
@@ -19,8 +20,8 @@ interface ScanButtonProps {
 
 export default function ScanButton(props: ScanButtonProps) {
   const {
-    label = 'Scan Page',
-    loadingLabel = 'Scanning…',
+    label = t('scanPage'),
+    loadingLabel = t('scanning'),
     icon,
     loading = false,
     disabled = false,

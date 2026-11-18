@@ -1,5 +1,6 @@
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { t } from '@/lib/i18n'
 
 interface RemoveButtonProps {
   onClick: () => void
@@ -14,7 +15,7 @@ export default function RemoveButton(props: RemoveButtonProps) {
       size="icon-sm"
       onClick={props.onClick}
       disabled={props.disabled}
-      title={props.title ?? 'Remove'}
+      title={props.title ?? t('remove')}
     >
       <X size={13} />
     </Button>

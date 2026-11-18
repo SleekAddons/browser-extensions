@@ -16,6 +16,7 @@ import EmptyState from '@/components/EmptyState'
 import ItemCounter from '@/components/ItemCounter'
 import { useScrollable } from '@/lib/useScrollable'
 import type { BlockRule, Schedule } from '../lib/types'
+import { t } from '../lib/i18n'
 
 function getLocaleFirstDayOfWeek(): number {
   try {
@@ -193,7 +194,7 @@ export default function ScheduleTab({
 
   const openPrefilledAdd = (domain: string) => {
     resetAdd()
-    setName(`${domain} schedule`)
+    setName(t('defaultScheduleName', domain))
     setPattern(domain)
     setEditingId(null)
     setShowAdd(true)
@@ -256,9 +257,9 @@ export default function ScheduleTab({
     <div className="flex h-full min-h-0 flex-col gap-3">
       <ItemCounter
         count={schedules.length}
-        label="Schedules"
+        label={t('schedules')}
         onAdd={() => { setShowAdd(true); setEditingId(null); resetAdd() }}
-        addLabel="Schedule"
+        addTitle={t('addSchedule')}
       />
 
       <div className="min-h-0 flex-1">
@@ -268,8 +269,8 @@ export default function ScheduleTab({
         >
           {showAdd && (
             <ContentCard
-              title="New Schedule"
-              description="Set when blocking is active for a site."
+              title={t('newSchedule')}
+              description={t('newScheduleDescription')}
               action={
                 <Button
                   type="button"
@@ -290,7 +291,7 @@ export default function ScheduleTab({
                 }}
               >
                 <div className="flex flex-col gap-1.5">
-                  <Label>Site</Label>
+                  <Label>{t('site')}</Label>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -298,7 +299,7 @@ export default function ScheduleTab({
                         className="w-full justify-between font-normal"
                         disabled={!hasDomains}
                       >
-                        <span className="truncate">{hasDomains ? (pattern || 'Select site…') : 'No sites'}</span>
+                        <span className="truncate">{hasDomains ? (pattern || t('selectSite')) : t('noSites')}</span>
                         <ChevronDown size={14} className="shrink-0 opacity-50" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -310,13 +311,13 @@ export default function ScheduleTab({
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <p className="text-xs text-muted-foreground">Choose the site this schedule should apply to.</p>
+                  <p className="text-xs text-muted-foreground">{t('scheduleSiteHint')}</p>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <Label>Name</Label>
+                  <Label>{t('name')}</Label>
                   <Input
-                    placeholder="e.g. Work hours"
+                    placeholder={t('scheduleNamePlaceholder')}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     autoFocus
@@ -325,14 +326,14 @@ export default function ScheduleTab({
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <Label>Active days</Label>
+                  <Label>{t('activeDays')}</Label>
                   <DayPicker days={days} onToggle={toggleDay} firstDayOfWeek={firstDayOfWeek} />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                   <div className="grid grid-cols-2 gap-2">
                     <div className="flex flex-col gap-1">
-                      <Label>Start Time</Label>
+                      <Label>{t('startTime')}</Label>
                       <Input
                         value={startTimeInput}
                         onChange={(e) => {
@@ -347,7 +348,7 @@ export default function ScheduleTab({
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <Label>End Time</Label>
+                      <Label>{t('endTime')}</Label>
                       <Input
                         value={endTimeInput}
                         onChange={(e) => {
@@ -362,7 +363,7 @@ export default function ScheduleTab({
                       />
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">Use local time format (e.g. {localeTimeExample}).</p>
+                  <p className="text-xs text-muted-foreground">{t('timeFormatHint', localeTimeExample)}</p>
                 </div>
 
                 <Separator className="my-1" />
@@ -377,14 +378,14 @@ export default function ScheduleTab({
                       resetAdd()
                     }}
                   >
-                    Cancel
+                    {t('cancel')}
                   </Button>
                   <Button
                     type="submit"
                     className="flex-1"
                     disabled={!name.trim() || days.length === 0 || !pattern}
                   >
-                    Add Schedule
+                    {t('addSchedule')}
                   </Button>
                 </div>
               </form>
@@ -394,8 +395,8 @@ export default function ScheduleTab({
           {schedules.length === 0 && !showAdd ? (
             <EmptyState
               icon={<CalendarClock />}
-              title="No schedules configured."
-              description="Without schedules, blocking rules are always active when enabled."
+              title={t('noSchedulesTitle')}
+              description={t('noSchedulesDescription')}
             />
           ) : (
             orderedSchedules.map((schedule) => {
@@ -403,7 +404,7 @@ export default function ScheduleTab({
                 return (
                   <ContentCard
                     key={schedule.id}
-                    title="Edit Schedule"
+                    title={t('editSchedule')}
                     action={
                       <Button
                         type="button"
@@ -424,17 +425,17 @@ export default function ScheduleTab({
                       }}
                     >
                       <div className="flex flex-col gap-1.5">
-                        <Label>Site</Label>
+                        <Label>{t('site')}</Label>
                         <Button variant="outline" className="w-full justify-between font-normal" disabled>
-                          <span className="truncate">{editPattern || 'Select site…'}</span>
+                          <span className="truncate">{editPattern || t('selectSite')}</span>
                           <ChevronDown size={14} className="shrink-0 opacity-50" />
                         </Button>
                       </div>
 
                       <div className="flex flex-col gap-1.5">
-                        <Label>Name</Label>
+                        <Label>{t('name')}</Label>
                         <Input
-                          placeholder="e.g. Work hours"
+                          placeholder={t('scheduleNamePlaceholder')}
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
                           autoFocus
@@ -443,14 +444,14 @@ export default function ScheduleTab({
                       </div>
 
                       <div className="flex flex-col gap-1.5">
-                        <Label>Active days</Label>
+                        <Label>{t('activeDays')}</Label>
                         <DayPicker days={editDays} onToggle={toggleEditDay} firstDayOfWeek={firstDayOfWeek} />
                       </div>
 
                       <div className="flex flex-col gap-1.5">
                         <div className="grid grid-cols-2 gap-2">
                           <div className="flex flex-col gap-1">
-                            <Label>Start Time</Label>
+                            <Label>{t('startTime')}</Label>
                             <Input
                               value={editStartTimeInput}
                               onChange={(e) => {
@@ -465,7 +466,7 @@ export default function ScheduleTab({
                             />
                           </div>
                           <div className="flex flex-col gap-1">
-                            <Label>End Time</Label>
+                            <Label>{t('endTime')}</Label>
                             <Input
                               value={editEndTimeInput}
                               onChange={(e) => {
@@ -480,7 +481,7 @@ export default function ScheduleTab({
                             />
                           </div>
                         </div>
-                        <p className="text-xs text-muted-foreground">Use local time format (e.g. {localeTimeExample}).</p>
+                        <p className="text-xs text-muted-foreground">{t('timeFormatHint', localeTimeExample)}</p>
                       </div>
 
                       <Separator className="my-1" />
@@ -492,14 +493,14 @@ export default function ScheduleTab({
                           className="flex-1"
                           onClick={() => setEditingId(null)}
                         >
-                          Cancel
+                          {t('cancel')}
                         </Button>
                         <Button
                           type="submit"
                           className="flex-1"
                           disabled={!editName.trim() || editDays.length === 0 || !editPattern}
                         >
-                          Save
+                          {t('save')}
                         </Button>
                       </div>
                     </form>
@@ -517,18 +518,18 @@ export default function ScheduleTab({
                         variant="ghost"
                         size="icon-sm"
                         onClick={() => startEditing(schedule)}
-                        title="Edit schedule"
+                        title={t('editScheduleTooltip')}
                       >
                         <Pencil size={12} />
                       </Button>
                       <DeleteDialog
                         trigger={
-                          <Button variant="ghost" size="icon-sm" title="Remove schedule">
+                          <Button variant="ghost" size="icon-sm" title={t('removeScheduleTooltip')}>
                             <Trash2 size={12} />
                           </Button>
                         }
-                        entityName="schedule"
-                        description={`This will permanently delete the "${schedule.name}" schedule.`}
+                        title={t('deleteScheduleTitle')}
+                        description={t('deleteScheduleDescription', schedule.name)}
                         onConfirm={() => onRemoveSchedule(schedule.id)}
                       />
                     </div>
@@ -536,27 +537,27 @@ export default function ScheduleTab({
                 >
                   <div className="flex flex-col gap-3">
                     <div className="flex flex-col gap-1.5">
-                      <Label>Site</Label>
+                      <Label>{t('site')}</Label>
                       <Button variant="outline" className="h-8 w-full justify-between text-sm font-normal" disabled>
-                        <span className="truncate">{schedule.patterns?.[0] || 'No site selected'}</span>
+                        <span className="truncate">{schedule.patterns?.[0] || t('noSiteSelected')}</span>
                         <ChevronDown size={14} className="shrink-0 opacity-50" />
                       </Button>
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <Label>Name</Label>
+                      <Label>{t('name')}</Label>
                       <Input value={schedule.name} disabled className="w-full" />
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <Label>Days</Label>
+                      <Label>{t('days')}</Label>
                       <DayPicker days={schedule.days} onToggle={() => {}} firstDayOfWeek={firstDayOfWeek} disabled />
                     </div>
 
                     <div className="flex flex-col gap-1.5">
                       <div className="grid grid-cols-2 gap-2">
                         <div className="flex flex-col gap-1">
-                          <Label>Start Time</Label>
+                          <Label>{t('startTime')}</Label>
                           <Input
                             value={formatTimeForLocale(schedule.startTime)}
                             disabled
@@ -564,7 +565,7 @@ export default function ScheduleTab({
                           />
                         </div>
                         <div className="flex flex-col gap-1">
-                          <Label>End Time</Label>
+                          <Label>{t('endTime')}</Label>
                           <Input
                             value={formatTimeForLocale(schedule.endTime)}
                             disabled

@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '@/components/ui/input-group'
 import ContentCard from '@/components/ContentCard'
 import type { BreakpointConfig } from '../lib/breakpoints'
+import { t } from '../lib/i18n'
 
 interface BreakpointListProps {
   breakpoints: BreakpointConfig[]
@@ -17,11 +18,11 @@ interface BreakpointListProps {
 export default function BreakpointList(props: BreakpointListProps) {
   return (
     <ContentCard
-      title="Breakpoints"
-      description="Define the widths and labels for each breakpoint"
+      title={t('breakpointsTitle')}
+      description={t('breakpointsDescription')}
       action={
         props.isPreset ? undefined : (
-          <Button variant="ghost" onClick={props.onReset} className="text-muted-foreground" title="Reset to preset defaults">
+          <Button variant="ghost" onClick={props.onReset} className="text-muted-foreground" title={t('resetBreakpoints')}>
             <RotateCcw />
           </Button>
         )
@@ -35,13 +36,13 @@ export default function BreakpointList(props: BreakpointListProps) {
               value={bp.color}
               onChange={(e) => props.onUpdate(i, { color: e.target.value })}
               className="!h-7 !w-7 !min-w-7 !p-0.5 shrink-0 cursor-pointer rounded-md border-0"
-              title="Color"
+              title={t('breakpointColor')}
             />
             <Input
               value={bp.name}
               onChange={(e) => props.onUpdate(i, { name: e.target.value })}
               className="h-7 flex-1 min-w-0"
-              placeholder="name"
+              placeholder={t('breakpointNamePlaceholder')}
             />
             <InputGroup className="h-7 flex-[1.4] min-w-0">
               <InputGroupAddon align="inline-start">
@@ -65,7 +66,7 @@ export default function BreakpointList(props: BreakpointListProps) {
               size="icon-sm"
               onClick={() => props.onRemove(i)}
               disabled={props.breakpoints.length <= 1}
-              title="Remove breakpoint"
+              title={t('removeBreakpoint')}
               className="text-muted-foreground hover:text-destructive"
             >
               <X size={13} />
@@ -80,7 +81,7 @@ export default function BreakpointList(props: BreakpointListProps) {
         className="w-full text-muted-foreground"
         onClick={props.onAdd}
       >
-        <Plus size={14} /> Add breakpoint
+        <Plus size={14} /> {t('addBreakpoint')}
       </Button>
     </ContentCard>
   )

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { Timer, Pencil, Trash2, Globe, X, ChevronDown } from 'lucide-react'
-import prettyMilliseconds from 'pretty-ms'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,6 +18,8 @@ import ItemCounter from '@/components/ItemCounter'
 import { useScrollable } from '@/lib/useScrollable'
 import type { BlockRule, DailyUsage, TimeLimit, TrackingState } from '../lib/types'
 import { elapsedTrackingSeconds, todayStr } from '../lib/usage'
+import { formatDuration, formatUnit } from '@/lib/i18n'
+import { t } from '../lib/i18n'
 
 interface LimitsTabProps {
   limits: TimeLimit[]
@@ -33,12 +34,12 @@ interface LimitsTabProps {
 }
 
 const PRESET_MINUTES = [
-  { label: '15 min', value: 15 },
-  { label: '30 min', value: 30 },
-  { label: '1 hour', value: 60 },
-  { label: '2 hours', value: 120 },
-  { label: '3 hours', value: 180 },
-  { label: 'Custom', value: -1 },
+  { label: formatUnit(15, 'minute', 'short'), value: 15 },
+  { label: formatUnit(30, 'minute', 'short'), value: 30 },
+  { label: formatUnit(1, 'hour'), value: 60 },
+  { label: formatUnit(2, 'hour'), value: 120 },
+  { label: formatUnit(3, 'hour'), value: 180 },
+  { label: t('customLimit'), value: -1 },
 ]
 
 function splitMinutes(totalMinutes: number): { hours: string; minutes: string } {
@@ -57,20 +58,9 @@ function combineHoursMinutes(hours: string, minutes: string): number {
   return h * 60 + m
 }
 
+/** A daily limit such as "30m" or "1h 30m". */
 function formatMinutes(m: number): string {
-  const ms = Math.max(0, Math.floor(m)) * 60 * 1000
-  return prettyMilliseconds(ms, {
-    unitCount: 2,
-  })
-}
-
-function formatLiveTime(totalSeconds: number): string {
-  const ms = Math.max(0, Math.floor(totalSeconds)) * 1000
-  if (ms === 0) return '0s'
-
-  return prettyMilliseconds(ms, {
-    secondsDecimalDigits: 0,
-  })
+  return formatDuration(Math.max(0, Math.floor(m)) * 60, 2)
 }
 
 export default function LimitsTab({
@@ -179,9 +169,9 @@ export default function LimitsTab({
     <div className="flex h-full min-h-0 flex-col gap-3">
       <ItemCounter
         count={limits.length}
-        label="Time Limits"
+        label={t('timeLimits')}
         onAdd={() => { setShowAdd(true); setEditingId(null); resetAdd() }}
-        addLabel="Limit"
+        addTitle={t('addLimit')}
       />
 
       <div className="min-h-0 flex-1">
@@ -191,8 +181,8 @@ export default function LimitsTab({
         >
           {showAdd && (
             <ContentCard
-              title="New Time Limit"
-              description="Set a daily time limit for selected sites."
+              title={t('newTimeLimit')}
+              description={t('newTimeLimitDescription')}
               action={
                 <Button
                   type="button"
@@ -213,7 +203,7 @@ export default function LimitsTab({
                 }}
               >
                 <div className="flex flex-col gap-1.5">
-                  <Label>Site</Label>
+                  <Label>{t('site')}</Label>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -221,7 +211,7 @@ export default function LimitsTab({
                         className="w-full justify-between font-normal"
                         disabled={!hasAvailableDomains}
                       >
-                        <span className="truncate">{hasAvailableDomains ? (selectedDomain || 'Select site…') : 'No sites'}</span>
+                        <span className="truncate">{hasAvailableDomains ? (selectedDomain || t('selectSite')) : t('noSites')}</span>
                         <ChevronDown size={14} className="shrink-0 opacity-50" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -233,15 +223,15 @@ export default function LimitsTab({
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <p className="text-xs text-muted-foreground">Choose which blocked site to apply this limit to.</p>
+                  <p className="text-xs text-muted-foreground">{t('limitSiteHint')}</p>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <Label>Daily Limit</Label>
+                  <Label>{t('dailyLimit')}</Label>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" className="w-full justify-between font-normal">
-                        <span className="truncate">{PRESET_MINUTES.find((p) => String(p.value) === selectedPreset)?.label ?? 'Select…'}</span>
+                        <span className="truncate">{PRESET_MINUTES.find((p) => String(p.value) === selectedPreset)?.label ?? t('select')}</span>
                         <ChevronDown size={14} className="shrink-0 opacity-50" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -259,7 +249,7 @@ export default function LimitsTab({
                   <div className="flex flex-col gap-1.5">
                     <div className="grid grid-cols-2 gap-2">
                       <div className="flex flex-col gap-1">
-                        <Label>Hours</Label>
+                        <Label>{t('hours')}</Label>
                         <Input
                           type="number"
                           placeholder="0"
@@ -270,7 +260,7 @@ export default function LimitsTab({
                         />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <Label>Minutes</Label>
+                        <Label>{t('minutes')}</Label>
                         <Input
                           type="number"
                           placeholder="0"
@@ -297,7 +287,7 @@ export default function LimitsTab({
                       resetAdd()
                     }}
                   >
-                    Cancel
+                    {t('cancel')}
                   </Button>
                   <Button
                     type="submit"
@@ -307,7 +297,7 @@ export default function LimitsTab({
                       (selectedPreset === '-1' && combineHoursMinutes(customHours, customMinutes) <= 0)
                     }
                   >
-                    Add Limit
+                    {t('addLimit')}
                   </Button>
                 </div>
               </form>
@@ -317,8 +307,8 @@ export default function LimitsTab({
           {limits.length === 0 && !showAdd ? (
             <EmptyState
               icon={<Timer />}
-              title="No time limits configured."
-              description="Add daily limits to control usage of blocked sites."
+              title={t('noLimitsTitle')}
+              description={t('noLimitsDescription')}
             />
           ) : (
             orderedLimits.map((limit) => {
@@ -342,7 +332,7 @@ export default function LimitsTab({
                 return (
                   <ContentCard
                     key={limit.id}
-                    title="Edit Limit"
+                    title={t('editLimit')}
                     action={
                       <Button
                         type="button"
@@ -363,19 +353,19 @@ export default function LimitsTab({
                       }}
                     >
                       <div className="flex flex-col gap-1.5">
-                        <Label>Site</Label>
+                        <Label>{t('site')}</Label>
                         <Button variant="outline" className="w-full justify-between font-normal" disabled>
-                          <span className="truncate">{limit.pattern || 'Select site…'}</span>
+                          <span className="truncate">{limit.pattern || t('selectSite')}</span>
                           <ChevronDown size={14} className="shrink-0 opacity-50" />
                         </Button>
                       </div>
 
                       <div className="flex flex-col gap-1.5">
-                        <Label>Daily Limit</Label>
+                        <Label>{t('dailyLimit')}</Label>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="w-full justify-between font-normal">
-                              <span className="truncate">{PRESET_MINUTES.find((p) => String(p.value) === editPreset)?.label ?? 'Select…'}</span>
+                              <span className="truncate">{PRESET_MINUTES.find((p) => String(p.value) === editPreset)?.label ?? t('select')}</span>
                               <ChevronDown size={14} className="shrink-0 opacity-50" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -393,7 +383,7 @@ export default function LimitsTab({
                         <div className="flex flex-col gap-1.5">
                           <div className="grid grid-cols-2 gap-2">
                             <div className="flex flex-col gap-1">
-                              <Label>Hours</Label>
+                              <Label>{t('hours')}</Label>
                               <Input
                                 type="number"
                                 placeholder="0"
@@ -404,7 +394,7 @@ export default function LimitsTab({
                               />
                             </div>
                             <div className="flex flex-col gap-1">
-                              <Label>Minutes</Label>
+                              <Label>{t('minutes')}</Label>
                               <Input
                                 type="number"
                                 placeholder="0"
@@ -428,14 +418,14 @@ export default function LimitsTab({
                           className="flex-1"
                           onClick={() => setEditingId(null)}
                         >
-                          Cancel
+                          {t('cancel')}
                         </Button>
                         <Button
                           type="submit"
                           className="flex-1"
                           disabled={editPreset === '-1' && combineHoursMinutes(editCustomHours, editCustom) <= 0}
                         >
-                          Save
+                          {t('save')}
                         </Button>
                       </div>
                     </form>
@@ -454,18 +444,18 @@ export default function LimitsTab({
                         variant="ghost"
                         size="icon-sm"
                         onClick={() => startEditing(limit)}
-                        title="Edit limit"
+                        title={t('editLimitTooltip')}
                       >
                         <Pencil size={12} />
                       </Button>
                       <DeleteDialog
                         trigger={
-                          <Button variant="ghost" size="icon-sm" title="Remove limit">
+                          <Button variant="ghost" size="icon-sm" title={t('removeLimitTooltip')}>
                             <Trash2 size={12} />
                           </Button>
                         }
-                        entityName="time limit"
-                        description={`This will remove the daily time limit for "${limit.pattern}".`}
+                        title={t('deleteLimitTitle')}
+                        description={t('deleteLimitDescription', limit.pattern)}
                         onConfirm={() => onRemoveLimit(limit.id)}
                       />
                     </div>
@@ -478,15 +468,15 @@ export default function LimitsTab({
                     />
                     <div className="flex items-end justify-between gap-3 text-sm tabular-nums">
                       <div className="space-y-0.5 min-w-0">
-                        <p className="text-xs text-muted-foreground">Usage</p>
+                        <p className="text-xs text-muted-foreground">{t('usage')}</p>
                         <p className={`leading-none ${tracking?.domain === limit.pattern ? 'text-foreground' : 'text-foreground/90'}`}>
-                          {formatLiveTime(totalSeconds)} of {formatMinutes(limit.dailyMinutes)}
+                          {t('usageOf', formatDuration(totalSeconds), formatMinutes(limit.dailyMinutes))}
                         </p>
                       </div>
                       <div className="ml-auto flex flex-col items-end gap-0.5 text-right">
-                        <p className="text-xs text-muted-foreground">Time left</p>
+                        <p className="text-xs text-muted-foreground">{t('timeLeft')}</p>
                         <p className="leading-none text-foreground/90">
-                          {exceeded ? 'Limit reached' : formatLiveTime(remainingSeconds)}
+                          {exceeded ? t('limitReached') : formatDuration(remainingSeconds)}
                         </p>
                       </div>
                     </div>

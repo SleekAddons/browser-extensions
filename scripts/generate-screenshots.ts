@@ -53,6 +53,10 @@ const FONT_DIRS: Record<string, string> = {
 /** Render at 2x and downsample, for smoother text and edges. */
 const SUPERSAMPLE = 2
 
+/** Language of the extension UI in the screenshots (a folder in _locales). */
+const LOCALE = 'en'
+const UI_LANGUAGE = 'en-US'
+
 const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -141,6 +145,29 @@ function readBuiltManifest(): Record<string, any> {
   return JSON.parse(fs.readFileSync(path.join(BUILD_DIR, 'manifest.json'), 'utf8'))
 }
 
+/** The build's messages for LOCALE as { key: text }. */
+function readBuiltMessages(): Record<string, string> {
+  const file = path.join(BUILD_DIR, '_locales', LOCALE, 'messages.json')
+  const bundle = JSON.parse(fs.readFileSync(file, 'utf8')) as Record<string, { message: string }>
+  return Object.fromEntries(Object.entries(bundle).map(([key, { message }]) => [key, message]))
+}
+
+/** Fills in the manifest's __MSG_key__ placeholders, as the browser does. */
+function localizeManifest(manifest: Record<string, any>, messages: Record<string, string>): Record<string, any> {
+  const lookup = new Map(Object.entries(messages).map(([key, text]) => [key.toLowerCase(), text]))
+  return JSON.parse(JSON.stringify(manifest), (_key, value) =>
+    typeof value === 'string'
+      ? value.replace(/__MSG_([A-Za-z0-9_@]+)__/g, (match, name: string) => lookup.get(name.toLowerCase()) ?? match)
+      : value,
+  )
+}
+
+/** The extension name from its English locale file, to check which extension .output holds. */
+function sourceName(slug: string): string | undefined {
+  const file = path.join(EXTENSIONS_DIR, slug, 'locales', 'en.json')
+  return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')).extName : undefined
+}
+
 async function frameFor(page: Page, role: FrameRole): Promise<Frame> {
   const element = await page.waitForSelector(`iframe[data-role="${role}"]`, { state: 'attached' })
   const frame = await element.contentFrame()
@@ -192,6 +219,7 @@ async function renderScene(
   server: StageServer,
   scene: Scene,
   manifest: Record<string, any>,
+  messages: Record<string, string>,
 ): Promise<Buffer> {
   const size = canvasSize(scene)
   const context = await browser.newContext({
@@ -199,7 +227,7 @@ async function renderScene(
     deviceScaleFactor: SUPERSAMPLE,
     colorScheme: scene.theme,
     // Same time zone as this process, so "today" in the demo data matches the page.
-    locale: 'en-US',
+    locale: UI_LANGUAGE,
   })
 
   // Nothing may leave the machine: every request outside the local server fails.
@@ -210,6 +238,8 @@ async function renderScene(
 
   const mock = {
     manifest,
+    messages,
+    uiLanguage: UI_LANGUAGE,
     theme: scene.theme,
     tab: { url: scene.tab.url, title: scene.tab.title },
     storage: scene.storage ?? {},
@@ -309,8 +339,9 @@ async function main() {
   try {
     for (const slug of slugs) {
       if (!skipBuild) build(slug)
-      const manifest = readBuiltManifest()
-      const expectedName = fs.readFileSync(path.join(EXTENSIONS_DIR, slug, 'manifest.config.ts'), 'utf8').match(/name:\s*'([^']+)'/)?.[1]
+      const messages = readBuiltMessages()
+      const manifest = localizeManifest(readBuiltManifest(), messages)
+      const expectedName = sourceName(slug)
       if (expectedName && manifest.name !== expectedName) {
         throw new Error(`.output/chrome-mv3 contains "${manifest.name}", not ${slug}. Drop --skip-build.`)
       }
@@ -321,7 +352,7 @@ async function main() {
       if (promo) {
         for (const scene of sets[slug]) {
           if (only && !only.has(scene.file)) continue
-          fs.writeFileSync(path.join(targetDir, scene.file), await renderScene(browser, server, scene, manifest))
+          fs.writeFileSync(path.join(targetDir, scene.file), await renderScene(browser, server, scene, manifest, messages))
           const { width, height } = canvasSize(scene)
           console.log(`  ✔ ${slug}/${scene.file} (${width}x${height})`)
         }
@@ -335,7 +366,7 @@ async function main() {
 
       for (const scene of SCENES[slug]) {
         if (only && !only.has(scene.file)) continue
-        const png = await renderScene(browser, server, scene, manifest)
+        const png = await renderScene(browser, server, scene, manifest, messages)
         fs.writeFileSync(path.join(targetDir, scene.file), png)
         captions[scene.file] = scene.caption
         console.log(`  ✔ ${slug}/${scene.file} — ${scene.caption}`)

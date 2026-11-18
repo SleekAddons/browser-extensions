@@ -43,6 +43,9 @@ import {
 } from 'lucide-react'
 import { SYSTEM_COMMANDS } from '../lib/types'
 import { MAX_CONVERSATIONS } from '../lib/storage'
+import { formatApproxTokens, formatTokenCount } from '../lib/format'
+import { formatNumber } from '@/lib/i18n'
+import { t, tPlural } from '../lib/i18n'
 
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4)
@@ -56,11 +59,6 @@ function readAsBase64(file: File): Promise<string> {
     reader.onerror = () => reject(reader.error)
     reader.readAsDataURL(file)
   })
-}
-
-function formatTokenCount(tokens: number): string {
-  if (tokens >= 1000) return `${(tokens / 1000).toFixed(1)}k`
-  return String(tokens)
 }
 
 interface ChatViewProps {
@@ -296,23 +294,23 @@ export default function ChatView(props: ChatViewProps) {
       <div className="flex flex-col gap-2">
         <Alert>
           <Info size={16} />
-          <AlertTitle className="text-base font-semibold">History Limit</AlertTitle>
+          <AlertTitle className="text-base font-semibold">{t('historyLimitTitle')}</AlertTitle>
           <AlertDescription className="text-sm">
-            Only the last {MAX_CONVERSATIONS} conversations are kept. Older chats are automatically removed.
+            {t('historyLimitDescription', MAX_CONVERSATIONS)}
           </AlertDescription>
         </Alert>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon-sm" onClick={() => setShowHistory(false)}>
             <ChevronLeft size={14} />
           </Button>
-          <span className="font-semibold text-sm">Chat History</span>
+          <span className="font-semibold text-sm">{t('chatHistory')}</span>
         </div>
         
         {conversations.length === 0 && (
           <EmptyState
             icon={<History />}
-            title="No conversations yet."
-            description="Start a new chat to see it here."
+            title={t('noConversationsTitle')}
+            description={t('noConversationsDescription')}
           />
         )}
         {conversations.map((c) => (
@@ -332,7 +330,7 @@ export default function ChatView(props: ChatViewProps) {
                   {c.model}
                 </Badge>
                 <span className="text-muted-foreground text-sm">
-                  {c.messages.length} messages
+                  {tPlural('messageCount', c.messages.length)}
                 </span>
               </div>
             </div>
@@ -340,7 +338,7 @@ export default function ChatView(props: ChatViewProps) {
               variant="ghost"
               size="icon-sm"
               onClick={(e) => { e.stopPropagation(); onDeleteConversation(c.id) }}
-              title="Delete conversation"
+              title={t('deleteConversation')}
             >
               <Trash2 size={11} />
             </Button>
@@ -360,7 +358,7 @@ export default function ChatView(props: ChatViewProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild disabled={chatDisabled}>
             <Button variant="outline" size="sm" className="flex-1 justify-between font-normal">
-              <span className="truncate">{selectedModel ?? 'Select model'}</span>
+              <span className="truncate">{selectedModel ?? t('selectModel')}</span>
               <ChevronDown size={14} className="opacity-50 shrink-0" />
             </Button>
           </DropdownMenuTrigger>
@@ -382,7 +380,7 @@ export default function ChatView(props: ChatViewProps) {
           variant="outline"
           size="icon-sm"
           onClick={() => { onNewChat(); setTimeout(() => textareaRef.current?.focus(), 50) }}
-          title="New chat"
+          title={t('newChat')}
           disabled={isStreaming || chatDisabled}
         >
           <MessageSquarePlus size={14} />
@@ -391,7 +389,7 @@ export default function ChatView(props: ChatViewProps) {
           variant="outline"
           size="icon-sm"
           onClick={() => setShowHistory(true)}
-          title="Chat history"
+          title={t('chatHistory')}
         >
           <History size={14} />
         </Button>
@@ -410,8 +408,8 @@ export default function ChatView(props: ChatViewProps) {
             chatDisabled ? (
               <EmptyState
                 icon={<Server />}
-                title="No endpoint connected"
-                description="Add an Ollama or OpenAI-compatible endpoint to start chatting."
+                title={t('noEndpointConnected')}
+                description={t('noEndpointConnectedDescription')}
               >
                 <Button
                   variant="default"
@@ -419,13 +417,13 @@ export default function ChatView(props: ChatViewProps) {
                   className="mt-2"
                   onClick={onGoToEndpoints}
                 >
-                  Add Endpoint
+                  {t('addEndpoint')}
                 </Button>
               </EmptyState>
             ) : (
               <EmptyState
-                title="Start a conversation"
-                description={selectedModel ? `Using ${selectedModel}` : 'Select a model above'}
+                title={t('startConversation')}
+                description={selectedModel ? t('usingModel', selectedModel) : t('selectModelAbove')}
               >
                 {selectedModel && chatOptions.pageContextEnabled && pageContext && (
                   <Button
@@ -439,7 +437,7 @@ export default function ChatView(props: ChatViewProps) {
                       }
                     }}
                   >
-                    Summarize page
+                    {t('summarizePage')}
                   </Button>
                 )}
               </EmptyState>
@@ -486,7 +484,7 @@ export default function ChatView(props: ChatViewProps) {
                     <span className="size-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '150ms' }} />
                     <span className="size-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
-                  Thinking…
+                  {t('thinking')}
                 </div>
               )}
             </div>
@@ -507,14 +505,14 @@ export default function ChatView(props: ChatViewProps) {
             >
               <Zap size={12} className="shrink-0" />
               <span className="truncate">
-                {activeCommand ? activeCommand.name : 'Command'}
+                {activeCommand ? activeCommand.name : t('command')}
               </span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-52">
             {commands.length === 0 ? (
               <p className="px-2 py-1.5 text-muted-foreground">
-                No commands configured.
+                {t('noCommandsTitle')}
               </p>
             ) : (
               <DropdownMenuRadioGroup
@@ -550,7 +548,7 @@ export default function ChatView(props: ChatViewProps) {
               ) : (
                 <Gauge size={12} className="shrink-0" />
               )}
-              {globalUsagePercent.toFixed(0)}%
+              {formatNumber(globalUsagePercent / 100, { style: 'percent', maximumFractionDigits: 0 })}
             </Button>
           </PopoverAnchor>
           <PopoverContent
@@ -563,13 +561,13 @@ export default function ChatView(props: ChatViewProps) {
             <div className="flex flex-col gap-2">
               <p className="text-muted-foreground">
                 {hasActualUsage
-                  ? 'Actual token usage reported by the server for the last request.'
+                  ? t('usageReported')
                   : hasReplies
-                    ? 'The server did not report token usage for this chat.'
-                    : 'Send a message to see actual token usage.'}
+                    ? t('usageNotReported')
+                    : t('usageEmpty')}
               </p>
               <div className="flex items-center justify-between ">
-                <span className="font-medium">Context window</span>
+                <span className="font-medium">{t('contextWindow')}</span>
                 <span className="text-muted-foreground">
                   {formatTokenCount(globalTokens)} / {formatTokenCount(maxContextTokens)}
                 </span>
@@ -580,7 +578,7 @@ export default function ChatView(props: ChatViewProps) {
               />
               {globalExceedsLimit && (
                 <p className="text-destructive">
-                  Context window exceeded, older messages may be dropped.
+                  {t('contextExceeded')}
                 </p>
               )}
 
@@ -634,7 +632,7 @@ export default function ChatView(props: ChatViewProps) {
               ) : (
                 <FileText size={12} className="shrink-0" />
               )}
-              Include page
+              {t('includePage')}
             </Button>
           </PopoverAnchor>
           <PopoverContent
@@ -646,30 +644,30 @@ export default function ChatView(props: ChatViewProps) {
           >
             <div className="flex flex-col gap-2">
               <p className="text-muted-foreground">
-                Extracts the visible text from the current page and sends it as additional data with your message.
+                {t('includePageDescription')}
               </p>
               {pageContext && (
                 <>
                   <div className="flex items-center justify-between ">
-                    <span className="font-medium">Page size</span>
-                    <span className="text-muted-foreground">~{formatTokenCount(pageTokens)} tokens</span>
+                    <span className="font-medium">{t('pageSize')}</span>
+                    <span className="text-muted-foreground">{formatApproxTokens(pageTokens)}</span>
                   </div>
                   <div className="flex items-center justify-between ">
-                    <span className="font-medium">Fits in context</span>
+                    <span className="font-medium">{t('fitsInContext')}</span>
                     <span className={pageFitsInRemaining ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}>
-                      {pageFitsInRemaining ? 'Yes' : 'No'}
+                      {pageFitsInRemaining ? t('yes') : t('no')}
                     </span>
                   </div>
                 </>
               )}
               {pageContext && chatOptions.pageContextEnabled && !pageFitsInRemaining && (
                 <p className="text-destructive">
-                  Page content exceeds remaining context and will be automatically truncated to fit.
+                  {t('pageTruncated')}
                 </p>
               )}
               {chatOptions.pageContextEnabled && !pageContext && !pageContextLoading && (
                 <p className="text-muted-foreground italic">
-                  No extractable text found on this page.
+                  {t('noPageText')}
                 </p>
               )}
             </div>
@@ -721,7 +719,7 @@ export default function ChatView(props: ChatViewProps) {
             size="icon-sm"
             onClick={() => fileInputRef.current?.click()}
             disabled={!selectedModel || isStreaming || chatDisabled}
-            title="Attach files"
+            title={t('attachFiles')}
           >
             <Paperclip size={14} />
           </InputGroupButton>
@@ -731,7 +729,7 @@ export default function ChatView(props: ChatViewProps) {
           value={input}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
-          placeholder={chatDisabled ? 'Connect an endpoint to chat' : selectedModel ? 'Type a message…' : 'Select a model first'}
+          placeholder={chatDisabled ? t('connectToChat') : selectedModel ? t('typeMessage') : t('selectModelFirst')}
           disabled={!selectedModel || chatDisabled}
           className="min-h-[36px] max-h-[120px] py-2"
           rows={1}
@@ -742,7 +740,7 @@ export default function ChatView(props: ChatViewProps) {
               variant="destructive"
               size="icon-sm"
               onClick={onStop}
-              title="Stop generating"
+              title={t('stopGenerating')}
             >
               <Square size={14} />
             </InputGroupButton>
@@ -752,7 +750,7 @@ export default function ChatView(props: ChatViewProps) {
               size="icon-sm"
               onClick={handleSubmit}
               disabled={(!input.trim() && !tempCommandId && attachments.length === 0) || !selectedModel || chatDisabled}
-              title="Send message"
+              title={t('sendMessage')}
             >
               <ArrowUp size={14} />
             </InputGroupButton>

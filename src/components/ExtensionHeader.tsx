@@ -1,5 +1,5 @@
-import { browser } from 'wxt/browser'
 import { useTheme, type ThemePreference } from '@/lib/useTheme'
+import { t, tRich } from '@/lib/i18n'
 import { Sun, Moon, Palette } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -12,16 +12,16 @@ import {
 
 
 interface ExtensionHeaderProps {
-  /** Override the extension name (defaults to manifest name) */
+  /** Override the extension name (defaults to the translated manifest name) */
   name?: string
   /** Developer / company name shown in the header */
   developer?: string
 }
 
 const themeOptions: { value: ThemePreference; label: string; icon: React.ReactNode }[] = [
-  { value: 'light', label: 'Light', icon: <Sun size={14} /> },
-  { value: 'dark', label: 'Dark', icon: <Moon size={14} /> },
-  { value: 'system', label: 'System', icon: <Palette size={14} /> },
+  { value: 'light', label: t('themeLight'), icon: <Sun size={14} /> },
+  { value: 'dark', label: t('themeDark'), icon: <Moon size={14} /> },
+  { value: 'system', label: t('themeSystem'), icon: <Palette size={14} /> },
 ]
 
 function ThemeIcon({ theme }: { theme: ThemePreference }) {
@@ -31,8 +31,7 @@ function ThemeIcon({ theme }: { theme: ThemePreference }) {
 }
 
 export default function ExtensionHeader(props: ExtensionHeaderProps) {
-  const manifest = browser.runtime.getManifest()
-  const name = props.name ?? manifest.name ?? 'Extension'
+  const name = props.name ?? t('extName')
   const { theme, setTheme } = useTheme()
 
   return (
@@ -41,15 +40,17 @@ export default function ExtensionHeader(props: ExtensionHeaderProps) {
         <div className="flex flex-col gap-0.5">
           <span className="font-semibold tracking-tight text-sm text-foreground/90">{name}</span>
           <span className="text-muted-foreground/50 text-xs">
-            by{' '}
-            <a
-              href="https://sleekaddons.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted-foreground/70 transition-colors hover:text-muted-foreground"
-            >
-              sleekaddons.com
-            </a>
+            {tRich(
+              'byDeveloper',
+              <a
+                href="https://sleekaddons.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground/70 transition-colors hover:text-muted-foreground"
+              >
+                sleekaddons.com
+              </a>,
+            )}
           </span>
         </div>
 

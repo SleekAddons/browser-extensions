@@ -11,6 +11,7 @@ import ItemCounter from '@/components/ItemCounter'
 import { BotMessageSquare, Info, Server, Zap } from 'lucide-react'
 import { useState } from 'react'
 import { useScrollable } from '@/lib/useScrollable'
+import { t } from '../lib/i18n'
 
 export default function LlmClientView(props: { className?: string }) {
   const {
@@ -79,15 +80,15 @@ export default function LlmClientView(props: { className?: string }) {
       <TabsList className="w-full shrink-0">
         <TabsTrigger value="chat" className="flex-1 gap-1.5 ">
           <BotMessageSquare size={14} />
-          Chat
+          {t('chat')}
         </TabsTrigger>
         <TabsTrigger value="commands" className="flex-1 gap-1.5 ">
           <Zap size={14} />
-          Commands
+          {t('commands')}
         </TabsTrigger>
         <TabsTrigger value="endpoints" className="flex-1 gap-1.5 ">
           <Server size={14} />
-          Endpoints
+          {t('endpoints')}
         </TabsTrigger>
       </TabsList>
 
@@ -127,9 +128,9 @@ export default function LlmClientView(props: { className?: string }) {
           renderCounter={(count, onAdd) => (
             <ItemCounter
               count={count}
-              label="Commands"
+              label={t('commands')}
               onAdd={onAdd}
-              addLabel="Command"
+              addTitle={t('addCommand')}
             />
           )}
         />
@@ -141,16 +142,16 @@ export default function LlmClientView(props: { className?: string }) {
           {(endpoints.length === 0 || endpoints.some((e) => e.provider === 'ollama')) && (
             <Alert>
               <Info size={16} />
-              <AlertTitle className="text-base font-semibold">Cross-Origin Configuration</AlertTitle>
+              <AlertTitle className="text-base font-semibold">{t('corsTitle')}</AlertTitle>
               <AlertDescription className='text-balance'>
-                Allow additional web origins so this extension can reach Ollama.{' '}
+                {t('corsDescription')}{' '}
                 <a
                   href="https://docs.ollama.com/faq#how-can-i-allow-additional-web-origins-to-access-ollama"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline underline-offset-2"
                 >
-                  Learn how to configure CORS
+                  {t('corsLink')}
                 </a>
               </AlertDescription>
             </Alert>
@@ -158,9 +159,9 @@ export default function LlmClientView(props: { className?: string }) {
 
           <ItemCounter
             count={endpoints.length}
-            label="Endpoints"
+            label={t('endpoints')}
             onAdd={() => setShowAddEndpoint(true)}
-            addLabel="Endpoint"
+            addTitle={t('addEndpoint')}
           />
 
           <div ref={endpointsRef} className={`min-h-0 flex-1 overflow-y-scroll ${endpointsPadding ? 'pr-3' : ''}`}>
@@ -172,15 +173,15 @@ export default function LlmClientView(props: { className?: string }) {
               {loading && (
                 <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
                   <Spinner className="size-3.5" />
-                  Loading endpoints…
+                  {t('loadingEndpoints')}
                 </div>
               )}
 
               {!loading && endpoints.length === 0 && !showAddEndpoint && (
                 <EmptyState
                   icon={<Server />}
-                  title="No endpoints configured."
-                  description="Add an Ollama or OpenAI-compatible endpoint to get started."
+                  title={t('noEndpointsTitle')}
+                  description={t('noEndpointsDescription')}
                 />
               )}
 

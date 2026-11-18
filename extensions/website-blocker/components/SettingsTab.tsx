@@ -1,4 +1,5 @@
 import ExtensionToggle from '@/components/ExtensionToggle'
+import { t } from '../lib/i18n'
 
 interface SettingsTabProps {
   enabled: boolean
@@ -14,7 +15,7 @@ export default function SettingsTab({
       <ExtensionToggle
         enabled={enabled}
         onToggle={onSetEnabled}
-        description={enabled ? 'Website blocking is active' : 'Website blocking is paused'}
+        description={enabled ? t('blockingActive') : t('blockingPaused')}
       />
     </div>
   )

@@ -4,11 +4,12 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import ContentCard from '@/components/ContentCard'
 import type { SiteFilterMode } from '../lib/breakpoints'
+import { t } from '../lib/i18n'
 
 const FILTER_MODES: { value: SiteFilterMode; label: string }[] = [
-  { value: 'all', label: 'All sites' },
-  { value: 'allowlist', label: 'Only these' },
-  { value: 'blocklist', label: 'Except these' },
+  { value: 'all', label: t('sitesAll') },
+  { value: 'allowlist', label: t('sitesOnly') },
+  { value: 'blocklist', label: t('sitesExcept') },
 ]
 
 interface SiteFilterPanelProps {
@@ -24,7 +25,7 @@ export default function SiteFilterPanel(props: SiteFilterPanelProps) {
   const listDisabled = props.filterMode === 'all'
 
   return (
-    <ContentCard title="Show on websites" description="Control which sites display the breakpoint badge">
+    <ContentCard title={t('sitesTitle')} description={t('sitesDescription')}>
       <Tabs
         value={props.filterMode}
         onValueChange={(value) => props.onFilterModeChange(value as SiteFilterMode)}
@@ -53,7 +54,7 @@ export default function SiteFilterPanel(props: SiteFilterPanelProps) {
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => props.onRemovePattern(i)}
-                title="Remove pattern"
+                title={t('removePattern')}
                 disabled={listDisabled}
                 className="text-muted-foreground hover:text-destructive"
               >
@@ -63,7 +64,7 @@ export default function SiteFilterPanel(props: SiteFilterPanelProps) {
           ))
         ) : (
           <div className="flex items-center justify-center py-4 text-muted-foreground text-sm">
-            <span>No patterns added</span>
+            <span>{t('noPatterns')}</span>
           </div>
         )}
       </div>
@@ -75,7 +76,7 @@ export default function SiteFilterPanel(props: SiteFilterPanelProps) {
         onClick={props.onAddPattern}
         disabled={listDisabled}
       >
-        <Plus size={14} /> Add site pattern
+        <Plus size={14} /> {t('addPattern')}
       </Button>
     </ContentCard>
   )

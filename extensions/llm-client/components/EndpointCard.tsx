@@ -7,7 +7,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
-import { PROVIDERS, formatModelSize } from '../lib/api'
+import { PROVIDERS } from '../lib/api'
+import { formatModelSize } from '../lib/format'
+import { t, tRich } from '../lib/i18n'
 import {
   RefreshCw,
   Trash2,
@@ -47,7 +49,7 @@ export default function EndpointCard(props: EndpointCardProps) {
             size="icon-sm"
             onClick={onRefresh}
             disabled={loading}
-            title="Refresh models"
+            title={t('refreshModels')}
           >
             {loading ? <Spinner className="size-3" /> : <RefreshCw size={12} />}
           </Button>
@@ -55,18 +57,18 @@ export default function EndpointCard(props: EndpointCardProps) {
             variant="ghost"
             size="icon-sm"
             onClick={onEdit}
-            title="Edit endpoint"
+            title={t('editEndpointTooltip')}
           >
             <Pencil size={12} />
           </Button>
           <DeleteDialog
             trigger={
-              <Button variant="ghost" size="icon-sm" title="Remove endpoint">
+              <Button variant="ghost" size="icon-sm" title={t('removeEndpointTooltip')}>
                 <Trash2 size={12} />
               </Button>
             }
-            entityName="endpoint"
-            description={`This will remove "${endpoint.name}" and all its conversations.`}
+            title={t('deleteEndpointTitle')}
+            description={t('deleteEndpointDescription', endpoint.name)}
             onConfirm={onDelete}
           />
         </div>
@@ -81,8 +83,8 @@ export default function EndpointCard(props: EndpointCardProps) {
         <Alert variant="destructive">
           <AlertDescription>
             {isOllama
-              ? `Unable to connect. Check that Ollama is running at ${endpoint.baseUrl}.`
-              : 'Unable to connect. Check the URL and API key.'}
+              ? t('connectFailedOllama', endpoint.baseUrl)
+              : t('connectFailedOpenai')}
             {error && <span className="mt-1 block font-mono text-xs opacity-80">{error}</span>}
           </AlertDescription>
         </Alert>
@@ -98,7 +100,7 @@ export default function EndpointCard(props: EndpointCardProps) {
           {hiddenModelCount > 0 && (
             <Badge asChild variant="secondary" className="py-0.5 px-2 font-normal">
               <button type="button" onClick={() => setShowAllModels(true)}>
-                +{hiddenModelCount} more
+                {t('moreModels', hiddenModelCount)}
               </button>
             </Badge>
           )}
@@ -109,8 +111,8 @@ export default function EndpointCard(props: EndpointCardProps) {
         <Alert>
           <AlertDescription>
             {isOllama
-              ? <>No models found. Pull a model with <code>ollama pull</code>.</>
-              : 'No chat models found on this server.'}
+              ? tRich('noModelsOllama', <code>ollama pull</code>)
+              : t('noModelsOpenai')}
           </AlertDescription>
         </Alert>
       )}
@@ -126,7 +128,7 @@ export default function EndpointCard(props: EndpointCardProps) {
             onClick={onSelect}
           >
             <CheckCircle size={14} />
-            {isActive ? 'Active endpoint' : 'Use this endpoint'}
+            {isActive ? t('activeEndpoint') : t('useEndpoint')}
           </Button>
         </>
       )}

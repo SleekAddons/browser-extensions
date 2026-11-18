@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser'
 import { useCallback, useRef, useState } from 'react'
 import type { ExportFormat, TableData, TableInfo } from './types'
+import { t } from './i18n'
 
 async function getActiveTabId(): Promise<number | null> {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true })
@@ -91,7 +92,7 @@ export function useTableExtractor() {
     try {
       const tabId = await getActiveTabId()
       if (!tabId) {
-        if (request === scanRequest.current) setError('No active tab found')
+        if (request === scanRequest.current) setError(t('noActiveTab'))
         return
       }
       const infos = await readTables<TableInfo[]>(tabId, null)
@@ -99,7 +100,7 @@ export function useTableExtractor() {
       if (Array.isArray(infos)) {
         setTables(infos)
       } else {
-        setError('Could not scan the page for tables.')
+        setError(t('scanFailed'))
       }
     } catch {
       if (request === scanRequest.current) setAccessBlocked(true)
@@ -120,10 +121,10 @@ export function useTableExtractor() {
       if (data) {
         setTableData(data)
       } else {
-        setError('Could not extract table data')
+        setError(t('extractFailed'))
       }
     } catch {
-      if (request === selectRequest.current) setError('Could not extract table data')
+      if (request === selectRequest.current) setError(t('extractFailed'))
     }
   }, [])
 

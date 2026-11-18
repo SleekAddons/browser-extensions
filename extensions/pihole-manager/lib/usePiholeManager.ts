@@ -26,6 +26,7 @@ import {
   saveSessionId,
   clearSessionId,
 } from './storage'
+import { t } from './i18n'
 
 /** Minimum ms between manual refreshes for a single instance. */
 const REFRESH_COOLDOWN = 5_000
@@ -132,7 +133,7 @@ export function usePiholeManager() {
           const session = await authenticate(instance.baseUrl, instance.password)
           if (!session.valid || !session.sid) {
             await clearSessionId(id)
-            updateState(id, { loading: false, error: 'Authentication failed' })
+            updateState(id, { loading: false, error: t('authFailed') })
             return
           }
           sid = session.sid
@@ -142,7 +143,7 @@ export function usePiholeManager() {
 
         updateState(id, { sid, ...status, loading: false, lastRefreshedAt: Date.now() })
       } catch (err) {
-        updateState(id, { loading: false, error: errorMessage(err, 'Connection failed') })
+        updateState(id, { loading: false, error: errorMessage(err, t('connectionFailed')) })
       }
     },
     [updateState],
@@ -174,7 +175,7 @@ export function usePiholeManager() {
         if (err instanceof SessionExpiredError) {
           await connectInstance(state.instance, false)
         } else {
-          updateState(id, { loading: false, error: errorMessage(err, 'Refresh failed') })
+          updateState(id, { loading: false, error: errorMessage(err, t('refreshFailed')) })
         }
       }
     },
@@ -199,7 +200,7 @@ export function usePiholeManager() {
         )
         updateState(id, { blocking: result, loading: false, disabledUntil: disabledUntilFrom(result) })
       } catch (err) {
-        updateState(id, { loading: false, error: errorMessage(err, 'Toggle failed') })
+        updateState(id, { loading: false, error: errorMessage(err, t('toggleFailed')) })
       }
     },
     [updateState],
@@ -233,7 +234,7 @@ export function usePiholeManager() {
           )
           updateState(id, { blocking: result, loading: false, disabledUntil: disabledUntilFrom(result) })
         } catch (err) {
-          updateState(id, { loading: false, error: errorMessage(err, 'Toggle failed') })
+          updateState(id, { loading: false, error: errorMessage(err, t('toggleFailed')) })
         }
       }))
     },
@@ -271,8 +272,8 @@ export function usePiholeManager() {
   const addCurrentDomain = useCallback(
     async (id: string, type: 'allow' | 'deny'): Promise<string> => {
       const state = statesRef.current.get(id)
-      if (!state?.sid) throw new Error('Not connected')
-      if (!currentDomain) throw new Error('No active tab')
+      if (!state?.sid) throw new Error(t('notConnected'))
+      if (!currentDomain) throw new Error(t('noActiveTab'))
 
       await addDomain(state.instance.baseUrl, state.sid, currentDomain, type)
       // Refresh domain status after adding
@@ -286,7 +287,7 @@ export function usePiholeManager() {
   const removeDomainEntry = useCallback(
     async (id: string, entry: DomainRef): Promise<void> => {
       const state = statesRef.current.get(id)
-      if (!state?.sid) throw new Error('Not connected')
+      if (!state?.sid) throw new Error(t('notConnected'))
 
       await removeDomain(state.instance.baseUrl, state.sid, entry.domain, entry.type, entry.kind)
       // Refresh domain status after removing

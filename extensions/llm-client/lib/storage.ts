@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser'
 import type { Endpoint, StoredEndpoint, Conversation, ChatCommand, ChatOptions, TokenUsageStats } from './types'
 import { SYSTEM_COMMANDS } from './types'
+import { t } from './i18n'
 
 // Storage keys keep the "ollama_" prefix from when this extension was called
 // Ollama Client, so installs updated from those versions keep their endpoints,
@@ -56,7 +57,7 @@ export async function updateEndpoint(
 ): Promise<Endpoint[]> {
   const endpoints = await loadEndpoints()
   const idx = endpoints.findIndex((e) => e.id === id)
-  if (idx === -1) throw new Error('Endpoint not found')
+  if (idx === -1) throw new Error(t('endpointNotFound'))
   endpoints[idx] = { ...endpoints[idx], ...data }
   await saveEndpoints(endpoints)
   return endpoints
@@ -140,7 +141,7 @@ export async function updateCommand(
 ): Promise<ChatCommand[]> {
   const commands = await loadCommands()
   const idx = commands.findIndex((c) => c.id === id)
-  if (idx === -1) throw new Error('Command not found')
+  if (idx === -1) throw new Error(t('commandNotFound'))
   commands[idx] = { ...commands[idx], ...data }
   await saveCommands(commands)
   return commands

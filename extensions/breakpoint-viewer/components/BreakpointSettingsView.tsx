@@ -15,6 +15,7 @@ import ExtensionToggle from '@/components/ExtensionToggle'
 import { useBreakpointSettings } from '../lib/useBreakpointSettings'
 import { PRESETS } from '../lib/breakpoints'
 import type { BadgePosition, PresetId } from '../lib/breakpoints'
+import { t } from '../lib/i18n'
 
 const ICON = 15
 const POSITIONS: { value: BadgePosition; label: React.ReactNode }[] = [
@@ -47,11 +48,11 @@ export default function BreakpointSettingsView() {
       <ExtensionToggle
         enabled={settings.enabled}
         onToggle={(checked) => update({ enabled: checked })}
-        description="Display breakpoint badge"
+        description={t('toggleDescription')}
       />
 
       {/* Position */}
-      <ContentCard title="Badge position" description="Where the breakpoint indicator appears on the page">
+      <ContentCard title={t('positionTitle')} description={t('positionDescription')}>
         <Tabs
           value={settings.position}
           onValueChange={(value) => update({ position: value as BadgePosition })}
@@ -67,13 +68,13 @@ export default function BreakpointSettingsView() {
       </ContentCard>
 
       {/* Preset selector */}
-      <ContentCard title="Preset" description="Load breakpoints from a CSS framework">
+      <ContentCard title={t('presetTitle')} description={t('presetDescription')}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="w-full justify-between font-normal">
               <span className="truncate">
                 {settings.preset === 'custom'
-                  ? 'Custom'
+                  ? t('presetCustom')
                   : PRESETS.find((p) => p.id === settings.preset)?.label ?? settings.preset}
               </span>
               <ChevronDown size={14} className="opacity-50 shrink-0" />
@@ -89,7 +90,7 @@ export default function BreakpointSettingsView() {
                   {preset.label}
                 </DropdownMenuRadioItem>
               ))}
-              <DropdownMenuRadioItem value="custom">Custom</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="custom">{t('presetCustom')}</DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>

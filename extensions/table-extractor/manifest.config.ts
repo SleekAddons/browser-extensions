@@ -2,8 +2,9 @@ import pkg from '../../package.json'
 import type { UserManifest } from 'wxt'
 
 export default {
-  name: 'Table Extractor',
-  description: 'Copy tables from any webpage and save them as CSV, JSON, XML, HTML and XLSX files',
+  name: '__MSG_extName__',
+  description: '__MSG_extDescription__',
+  default_locale: 'en',
   version: pkg.version,
   icons: {
     16: 'icon16.png',

@@ -2,8 +2,9 @@ import pkg from '../../package.json'
 import type { UserManifest } from 'wxt'
 
 export default {
-  name: 'Breakpoint Viewer',
-  description: 'See which CSS breakpoint is active on any website. Supports Tailwind, Bootstrap, and custom presets.',
+  name: '__MSG_extName__',
+  description: '__MSG_extDescription__',
+  default_locale: 'en',
   version: pkg.version,
   icons: {
     16: 'icon16.png',

@@ -6,6 +6,7 @@ import { useWebsiteBlocker } from '../lib/useWebsiteBlocker'
 import BlockListTab from './BlockListTab'
 import LimitsTab from './LimitsTab'
 import ScheduleTab from './ScheduleTab'
+import { t } from '../lib/i18n'
 
 export default function WebsiteBlockerView() {
   const [activeTab, setActiveTab] = useState('blocklist')
@@ -37,7 +38,7 @@ export default function WebsiteBlockerView() {
     return (
       <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
         <Spinner className="size-3.5" />
-        Loading…
+        {t('loading')}
       </div>
     )
   }
@@ -66,15 +67,15 @@ export default function WebsiteBlockerView() {
       <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="blocklist">
           <Shield size={14} />
-          Sites
+          {t('tabSites')}
         </TabsTrigger>
         <TabsTrigger value="limits">
           <Timer size={14} />
-          Limits
+          {t('tabLimits')}
         </TabsTrigger>
         <TabsTrigger value="schedule">
           <Calendar size={14} />
-          Schedule
+          {t('tabSchedule')}
         </TabsTrigger>
       </TabsList>
 

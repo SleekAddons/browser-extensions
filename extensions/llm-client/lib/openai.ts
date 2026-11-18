@@ -6,6 +6,7 @@
 
 import type { Endpoint, ModelInfo, RequestMessage, TokenUsage } from './types'
 import { apiUrl, authHeaders, errorMessage, readJson, readLines, requestError } from './http'
+import { t } from './i18n'
 
 /** Model ids that cannot chat (embeddings, speech, images, moderation…); hidden from the model list. */
 const NON_CHAT_MODEL = /embed|whisper|tts|dall-e|gpt-image|moderation|transcribe|realtime|rerank/i
@@ -46,7 +47,7 @@ export async function listModels(endpoint: Endpoint, signal?: AbortSignal): Prom
   })
 
   if (!res.ok) {
-    const error = requestError('Failed to fetch models', res.status, await res.text().catch(() => ''))
+    const error = requestError(t('fetchModelsFailed'), res.status, await res.text().catch(() => ''))
     if (res.status === 404) error.message += versionHint(endpoint.baseUrl)
     throw error
   }
@@ -55,7 +56,7 @@ export async function listModels(endpoint: Endpoint, signal?: AbortSignal): Prom
   const body = await readJson(res)
   const list = Array.isArray(body) ? body : (body as { data?: unknown } | null)?.data
   if (!Array.isArray(list)) {
-    throw new Error((errorMessage(body) ?? 'Unexpected response: no model list') + versionHint(endpoint.baseUrl))
+    throw new Error((errorMessage(body) ?? t('noModelList')) + versionHint(endpoint.baseUrl))
   }
 
   return list
@@ -87,13 +88,13 @@ export async function streamChat(
   let res = await post({ ...body, stream_options: { include_usage: true } })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    if (!/stream_options/i.test(text)) throw requestError('Chat request failed', res.status, text)
+    if (!/stream_options/i.test(text)) throw requestError(t('chatRequestFailed'), res.status, text)
     res = await post(body)
-    if (!res.ok) throw requestError('Chat request failed', res.status, await res.text().catch(() => ''))
+    if (!res.ok) throw requestError(t('chatRequestFailed'), res.status, await res.text().catch(() => ''))
   }
 
   if (!res.body) {
-    throw new Error('No response body - streaming not supported')
+    throw new Error(t('noResponseBody'))
   }
 
   let usage = null as TokenUsage | null
@@ -104,7 +105,7 @@ export async function streamChat(
 
   const handle = (completion: Completion, field: 'delta' | 'message') => {
     if (completion.error || completion.object === 'error') {
-      throw new Error(errorMessage(completion) ?? 'The server reported an error')
+      throw new Error(errorMessage(completion) ?? t('serverError'))
     }
     const text = completion.choices?.[0]?.[field]?.content
     if (typeof text === 'string' && text) onDelta(text)
@@ -139,7 +140,7 @@ export async function streamChat(
     try {
       completion = JSON.parse(jsonBody) as Completion
     } catch {
-      throw new Error('Unexpected response from server')
+      throw new Error(t('unexpectedResponse'))
     }
     handle(completion, 'message')
   }
@@ -166,7 +167,7 @@ function toTokenUsage(usage: Usage): TokenUsage {
 
 /** Hint for a base URL that is probably missing its version, e.g. http://localhost:1234 instead of …/v1 */
 function versionHint(baseUrl: string): string {
-  return /\/v\d/.test(new URL(baseUrl).pathname) ? '' : ' (OpenAI-compatible URLs usually end in /v1)'
+  return /\/v\d/.test(new URL(baseUrl).pathname) ? '' : ` ${t('versionHint')}`
 }
 
 /** Convert messages to the Chat Completions format, smoothing over what strict servers reject. */

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { X } from 'lucide-react'
+import { t } from '../lib/i18n'
 
 interface AddInstanceDialogProps {
   open: boolean
@@ -32,15 +33,15 @@ export default function AddInstanceDialog(props: AddInstanceDialogProps) {
     setError(null)
 
     if (!name.trim()) {
-      setError('Name is required')
+      setError(t('nameRequired'))
       return
     }
     if (!baseUrl.trim() || (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://'))) {
-      setError('Enter a valid URL (http:// or https://)')
+      setError(t('urlInvalid'))
       return
     }
     if (!password.trim()) {
-      setError('Password is required')
+      setError(t('passwordRequired'))
       return
     }
 
@@ -54,7 +55,7 @@ export default function AddInstanceDialog(props: AddInstanceDialogProps) {
       props.onOpenChange(false)
       reset()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add instance')
+      setError(err instanceof Error ? err.message : t('addInstanceFailed'))
     } finally {
       setSubmitting(false)
     }
@@ -64,8 +65,8 @@ export default function AddInstanceDialog(props: AddInstanceDialogProps) {
 
   return (
     <ContentCard
-      title="Add Pi-hole Instance"
-      description="Connect to a Pi-hole 6+ instance."
+      title={t('addInstanceTitle')}
+      description={t('addInstanceDescription')}
       action={
         <Button
           type="button"
@@ -79,10 +80,10 @@ export default function AddInstanceDialog(props: AddInstanceDialogProps) {
     >
       <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="ph-name">Name</Label>
+            <Label htmlFor="ph-name">{t('name')}</Label>
             <Input
               id="ph-name"
-              placeholder="Home Pi-hole"
+              placeholder={t('namePlaceholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoComplete="off"
@@ -90,7 +91,7 @@ export default function AddInstanceDialog(props: AddInstanceDialogProps) {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="ph-url">URL</Label>
+            <Label htmlFor="ph-url">{t('url')}</Label>
             <Input
               id="ph-url"
               placeholder="https://pi.hole"
@@ -99,11 +100,11 @@ export default function AddInstanceDialog(props: AddInstanceDialogProps) {
               inputMode="url"
               autoComplete="url"
             />
-            <p className="text-xs text-muted-foreground">Use the base address of your Pi-hole instance.</p>
+            <p className="text-xs text-muted-foreground">{t('urlHint')}</p>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="ph-password">API Password</Label>
+            <Label htmlFor="ph-password">{t('apiPassword')}</Label>
             <Input
               id="ph-password"
               type="password"
@@ -130,10 +131,10 @@ export default function AddInstanceDialog(props: AddInstanceDialogProps) {
                 reset()
               }}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button type="submit" disabled={submitting} className="flex-1">
-              {submitting ? 'Connecting…' : 'Connect'}
+              {submitting ? t('connecting') : t('connect')}
             </Button>
           </div>
         </form>

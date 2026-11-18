@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import prettyMilliseconds from 'pretty-ms'
 import type { PiholeInstanceState } from '../lib/types'
 import type { DomainRef } from '../lib/usePiholeManager'
 import ContentCard from '@/components/ContentCard'
@@ -38,6 +37,8 @@ import {
   Check,
   ChevronDown,
 } from 'lucide-react'
+import { formatDuration, formatNumber, formatUnit } from '@/lib/i18n'
+import { t } from '../lib/i18n'
 
 interface InstanceCardProps {
   state: PiholeInstanceState
@@ -48,10 +49,6 @@ interface InstanceCardProps {
   onRemoveDomain: (entry: DomainRef) => Promise<void>
   onEdit: () => void
   onDelete: () => void
-}
-
-function formatNumber(n: number): string {
-  return n.toLocaleString()
 }
 
 /** Returns a human-readable relative time string that updates every second. */
@@ -68,8 +65,8 @@ function useRelativeTime(timestamp: number | null): string | null {
   if (timestamp == null) return null
 
   const diffSec = Math.max(0, Math.floor((now - timestamp) / 1000))
-  if (diffSec < 5) return 'just now'
-  return `${prettyMilliseconds(diffSec * 1000, { unitCount: 1, secondsDecimalDigits: 0 })} ago`
+  if (diffSec < 5) return t('justNow')
+  return t('timeAgo', formatDuration(diffSec, 1))
 }
 
 /** Returns a human-readable countdown string (e.g. "2m 30s") that updates every second. */
@@ -87,16 +84,14 @@ function useCountdown(targetTimestamp: number | null): string | null {
 
   const remainingSec = Math.max(0, Math.ceil((targetTimestamp - now) / 1000))
   if (remainingSec <= 0) return null
-  return prettyMilliseconds(remainingSec * 1000, {
-    secondsDecimalDigits: 0,
-  })
+  return formatDuration(remainingSec)
 }
 
 const DISABLE_DURATIONS = [
-  { label: '10 seconds', seconds: 10 },
-  { label: '30 seconds', seconds: 30 },
-  { label: '5 minutes', seconds: 300 },
-] as const
+  { label: formatUnit(10, 'second'), seconds: 10 },
+  { label: formatUnit(30, 'second'), seconds: 30 },
+  { label: formatUnit(5, 'minute'), seconds: 300 },
+]
 
 export default function InstanceCard(props: InstanceCardProps) {
   const {
@@ -128,7 +123,7 @@ export default function InstanceCard(props: InstanceCardProps) {
     try {
       await action()
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Action failed')
+      setActionError(err instanceof Error ? err.message : t('actionFailed'))
     } finally {
       setActionLoading(false)
     }
@@ -187,7 +182,7 @@ export default function InstanceCard(props: InstanceCardProps) {
               <TooltipContent
                 onPointerDownOutside={(e) => e.preventDefault()}
               >
-                {timeAgo ? `Last refreshed ${timeAgo}` : 'Refresh'}
+                {timeAgo ? t('lastRefreshed', timeAgo) : t('refresh')}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -195,7 +190,7 @@ export default function InstanceCard(props: InstanceCardProps) {
             variant="ghost"
             size="icon-sm"
             onClick={onEdit}
-            title="Edit instance"
+            title={t('editInstance')}
           >
             <Pencil size={12} />
           </Button>
@@ -204,13 +199,13 @@ export default function InstanceCard(props: InstanceCardProps) {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                title="Remove instance"
+                title={t('removeInstance')}
               >
                 <Trash2 size={12} />
               </Button>
             }
-            entityName="instance"
-            description={`This will permanently remove "${instance.name}" and its saved credentials.`}
+            title={t('deleteInstanceTitle')}
+            description={t('deleteInstanceDescription', instance.name)}
             onConfirm={onDelete}
           />
         </div>
@@ -232,12 +227,12 @@ export default function InstanceCard(props: InstanceCardProps) {
                       ? <ShieldCheck size={14} />
                       : <ShieldOff size={14} />,
                 label: timerExpired
-                  ? 'Re-enabling blocking…'
+                  ? t('reenablingBlocking')
                   : !isEnabled && countdown
-                    ? 'Temporarily Disabled'
+                    ? t('temporarilyDisabled')
                     : isEnabled
-                      ? 'Blocking ads and trackers'
-                      : 'All queries allowed through',
+                      ? t('blockingEnabled')
+                      : t('blockingDisabled'),
                 checked: isEnabled,
                 onChange: () => onToggleBlocking(),
                 disabled: loading || timerExpired,
@@ -256,7 +251,7 @@ export default function InstanceCard(props: InstanceCardProps) {
                 disabled={loading || !isEnabled || timerExpired}
                 size="lg"
               >
-                {timerExpired ? 'Re-enabling…' : !isEnabled && countdown ? `Enables in ${countdown}` : 'Disable blocking for…'}
+                {timerExpired ? t('reenabling') : !isEnabled && countdown ? t('enablesIn', countdown) : t('disableBlockingFor')}
                 <ChevronDown size={14} className="opacity-50" />
               </Button>
             </DropdownMenuTrigger>
@@ -270,7 +265,7 @@ export default function InstanceCard(props: InstanceCardProps) {
                 </DropdownMenuItem>
               ))}
               <DropdownMenuItem onClick={() => onToggleBlocking()}>
-                Indefinitely
+                {t('indefinitely')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -278,7 +273,7 @@ export default function InstanceCard(props: InstanceCardProps) {
 
         {error && (
           <Alert variant="destructive">
-            <AlertTitle>Error</AlertTitle>
+            <AlertTitle>{t('error')}</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
@@ -287,9 +282,16 @@ export default function InstanceCard(props: InstanceCardProps) {
         {summary && (
           <StatsGrid
             items={[
-              { label: 'Queries', value: formatNumber(summary.queries.total) },
-              { label: 'Blocked', value: formatNumber(summary.queries.blocked) },
-              { label: '% Blocked', value: `${summary.queries.percent_blocked.toFixed(1)}%` },
+              { label: t('statQueries'), value: formatNumber(summary.queries.total) },
+              { label: t('statBlocked'), value: formatNumber(summary.queries.blocked) },
+              {
+                label: t('statPercentBlocked'),
+                value: formatNumber(summary.queries.percent_blocked / 100, {
+                  style: 'percent',
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 1,
+                }),
+              },
             ]}
           />
         )}
@@ -321,7 +323,7 @@ export default function InstanceCard(props: InstanceCardProps) {
                 size="sm"
                 className="h-8 shrink-0 rounded-l-none px-2"
                 onClick={handleCopy}
-                title="Copy domain"
+                title={t('copyDomain')}
               >
                 {copied ? <Check size={14} /> : <Copy size={14} />}
               </Button>
@@ -331,14 +333,14 @@ export default function InstanceCard(props: InstanceCardProps) {
             {domainStatus?.loading && (
               <div className="flex items-center justify-center gap-1.5 py-2 text-muted-foreground">
                 <Spinner className="size-3" />
-                Checking rules…
+                {t('checkingRules')}
               </div>
             )}
 
             {domainStatus?.search && !domainStatus.loading && domainEntries.length === 0 && gravityEntries.length === 0 && (
               <Alert>
                 <AlertDescription>
-                  No rules found for this domain.
+                  {t('noRules')}
                 </AlertDescription>
               </Alert>
             )}
@@ -349,12 +351,14 @@ export default function InstanceCard(props: InstanceCardProps) {
                   <div key={`d-${i}`} className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/40 px-2 py-1">
                     <div className="flex min-w-0 items-center gap-1.5 text-foreground/80">
                       <span className="shrink-0 font-medium">
-                        {d.type === 'allow' ? 'Allow' : 'Deny'} {d.kind === 'regex' ? 'regex' : 'list'}
+                        {t(d.type === 'allow'
+                          ? d.kind === 'regex' ? 'allowRegex' : 'allowList'
+                          : d.kind === 'regex' ? 'denyRegex' : 'denyList')}
                       </span>
                       {d.kind === 'regex' && (
                         <span className="truncate font-mono text-muted-foreground" title={d.domain}>{d.domain}</span>
                       )}
-                      {!d.enabled && <Badge variant="outline" className="px-1 py-0">disabled</Badge>}
+                      {!d.enabled && <Badge variant="outline" className="px-1 py-0">{t('entryDisabled')}</Badge>}
                     </div>
                     <Button
                       variant="ghost"
@@ -363,14 +367,14 @@ export default function InstanceCard(props: InstanceCardProps) {
                       disabled={actionLoading}
                       onClick={() => runDomainAction(() => onRemoveDomain(d))}
                     >
-                      Remove
+                      {t('remove')}
                     </Button>
                   </div>
                 ))}
                 {gravityEntries.map((g, i) => (
                   <div key={`g-${i}`} className="flex items-center gap-1.5 rounded border border-border/60 bg-muted/40 px-2 py-1 text-foreground/80">
                     <span className="truncate">
-                      Gravity {g.type}: {g.address}
+                      {t(g.type === 'allow' ? 'gravityAllow' : 'gravityBlock', g.address)}
                     </span>
                   </div>
                 ))}
@@ -386,7 +390,7 @@ export default function InstanceCard(props: InstanceCardProps) {
                 onClick={() => toggleListEntry('allow', isOnAllowList)}
               >
                 {isOnAllowList ? <ShieldX size={12} /> : <ShieldMinus size={12} />}
-                {isOnAllowList ? 'Remove Allow' : 'Allow'}
+                {isOnAllowList ? t('removeAllow') : t('allow')}
               </Button>
               <Button
                 variant={isOnDenyList ? 'destructive' : 'outline'}
@@ -395,7 +399,7 @@ export default function InstanceCard(props: InstanceCardProps) {
                 onClick={() => toggleListEntry('deny', isOnDenyList)}
               >
                 {isOnDenyList ? <ShieldX size={12} /> : <ShieldPlus size={12} />}
-                {isOnDenyList ? 'Remove Block' : 'Block'}
+                {isOnDenyList ? t('removeBlock') : t('block')}
               </Button>
             </div>
 

@@ -1,3 +1,5 @@
+import { t } from './i18n'
+
 /** API an endpoint speaks */
 export type EndpointProvider = 'ollama' | 'openai'
 
@@ -77,6 +79,8 @@ export interface ChatMessage {
   pageContext?: MessagePageContext
   /** Actual token usage reported by the server (present on assistant messages) */
   tokenUsage?: TokenUsage
+  /** True when the message is an error shown in place of a reply */
+  error?: boolean
 }
 
 /** An image sent to a vision model */
@@ -152,7 +156,7 @@ export interface ChatCommand {
 export const SYSTEM_COMMANDS: ChatCommand[] = [
   {
     id: 'system-explain',
-    name: 'Explain',
+    name: t('commandExplain'),
     prompt:
       'Explain the following content in simple, clear terms. ' +
       'You MUST respond in the same language as the content provided by the user. ' +
@@ -162,7 +166,7 @@ export const SYSTEM_COMMANDS: ChatCommand[] = [
   },
   {
     id: 'system-summarize',
-    name: 'Summarize',
+    name: t('commandSummarize'),
     prompt:
       'Summarize the following content concisely, highlighting the key points. ' +
       'You MUST respond in the same language as the content provided by the user. ' +

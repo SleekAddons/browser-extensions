@@ -9,6 +9,7 @@ import {
 import ContentCard from '@/components/ContentCard'
 import { useScrollable } from '@/lib/useScrollable'
 import type { TableData } from '../lib/types'
+import { t, tPlural } from '../lib/i18n'
 
 interface DataPreviewProps {
   tableData: TableData | null
@@ -23,12 +24,12 @@ export default function DataPreview(props: DataPreviewProps) {
 
   return (
     <ContentCard
-      title="Data preview"
-      description={disabled ? 'Select a table to see a preview' : 'First rows of the selected table'}
+      title={t('previewTitle')}
+      description={disabled ? t('previewDisabledDescription') : t('previewDescription')}
     >
       {disabled ? (
         <div className="flex h-24 items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
-          No table selected
+          {t('noTableSelected')}
         </div>
       ) : (
         <div
@@ -40,7 +41,7 @@ export default function DataPreview(props: DataPreviewProps) {
               <TableRow>
                 {tableData!.headers.map((h, i) => (
                   <TableHead key={i}>
-                    {h || `Col ${i + 1}`}
+                    {h || t('columnNumber', i + 1)}
                   </TableHead>
                 ))}
               </TableRow>
@@ -61,7 +62,7 @@ export default function DataPreview(props: DataPreviewProps) {
                     colSpan={totalCols}
                     className="text-center text-muted-foreground"
                   >
-                    …{totalRows - 5} more rows
+                    {tPlural('moreRows', totalRows - 5)}
                   </TableCell>
                 </TableRow>
               )}

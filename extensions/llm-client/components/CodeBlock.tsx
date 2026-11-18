@@ -13,6 +13,7 @@ import {
 import { code as codePlugin } from '@streamdown/code'
 import type { BundledLanguage, TokensResult } from 'shiki'
 import { Check, Copy } from 'lucide-react'
+import { t } from '../lib/i18n'
 
 /* ------------------------------------------------------------------ */
 /*  Shared theme observer – single MutationObserver for all instances */
@@ -103,7 +104,7 @@ function CopyButton({ code }: { code: string }) {
     <button
       onClick={handleCopy}
       className="cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground"
-      title="Copy code"
+      title={t('copyCode')}
       type="button"
     >
       {copied ? <Check size={14} /> : <Copy size={14} />}

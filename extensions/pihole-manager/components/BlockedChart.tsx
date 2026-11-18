@@ -6,10 +6,11 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart'
 import type { PiholeHistoryEntry } from '../lib/types'
+import { t } from '../lib/i18n'
 
 const chartConfig = {
   blocked: {
-    label: 'Blocked',
+    label: t('statBlocked'),
     color: 'var(--foreground)',
   },
 } satisfies ChartConfig

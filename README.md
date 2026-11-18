@@ -55,6 +55,39 @@ npm run build:table-extractor
 
 UI primitives (buttons, dialogs, dropdowns, etc.) come from [shadcn/ui](https://ui.shadcn.com/) and live in [src/components/ui/](src/components/ui/). Higher-level shared widgets like `ExtensionHeader`, `PopupContainer`, `EmptyState`, and `StatsGrid` live in [src/components/](src/components/) and are reused across extensions.
 
+## Translations
+
+All extensions are translated into English, Russian, German, French, Spanish, Italian, Portuguese, Polish, Czech and Dutch. The browser shows the language of its own UI and falls back to English.
+
+Strings live in flat JSON files, one per language:
+
+- `src/locales/<locale>.json`: the shared components (header, dialogs, toggles, durations)
+- `extensions/<name>/locales/<locale>.json`: one extension, including its store name (`extName`) and description (`extDescription`), which the manifest uses as `__MSG_extName__` and `__MSG_extDescription__`
+
+The build merges them into `_locales/<locale>/messages.json` (see [extensions/locales.ts](extensions/locales.ts)). Portuguese is written to both `pt_BR` and `pt_PT`, because the Chrome Web Store ignores a plain `pt` folder.
+
+In code, use the typed helpers from the extension's `lib/i18n.ts` (or `@/lib/i18n` in `src/`); a key that is not in the English file is a type error:
+
+```tsx
+t('domainHint')                                    // plain text
+t('usingModel', model)                             // $1, $2… are filled in
+tPlural('tablesDetected', tables.length)           // tablesDetected_one / _few / _many / _other, $1 is the count
+tRich('noModelsOllama', <code>ollama pull</code>)  // $1 is a React node
+```
+
+Durations, numbers and units go through `formatDuration`, `formatNumber` and `formatUnit` from `@/lib/i18n` instead of hand-built strings.
+
+To add or change a string, edit the English file and then every other language. Placeholders must match the English text, and plural keys need every plural form of the language: `_one` and `_other` in most languages, plus `_few` and `_many` in Russian and Polish, and `_few` in Czech.
+
+```bash
+npm run check-locales                  # every extension; fails on any problem or missing translation
+npm run check-locales -- --locale de   # only report German
+```
+
+The build stops on broken translations (unknown keys, wrong placeholders, missing plural forms, a name over 75 or a description over 132 characters) and warns about missing ones, which then show in English. Locale files are not part of the bundle, so restart `npm run dev:*` after editing them.
+
+To add a language, put `<locale>.json` next to every `en.json`, named with a Chrome locale code such as `ja` or `pt_BR`.
+
 ## Icons
 
 Extension icons (16, 32, 48, 128 px) are auto-generated from each extension's name initials with a black rounded background and white centered text. Output goes to `extensions/<name>/public/`.
@@ -77,7 +110,7 @@ npm run generate-screenshots                                 # all extensions
 npm run generate-screenshots -- table-extractor --only 2     # one screenshot
 ```
 
-The generator builds the extension and renders its real popup or side panel with demo data. Scenes (headline, demo data, clicks) live in [scripts/screenshots/scenes/](scripts/screenshots/scenes/). The extension UI is shown in dark theme, while demo websites stay light so it is clear where the page ends and the extension begins.
+The generator builds the extension and renders its real popup or side panel, in English, with demo data. Scenes (headline, demo data, clicks) live in [scripts/screenshots/scenes/](scripts/screenshots/scenes/). The extension UI is shown in dark theme, while demo websites stay light so it is clear where the page ends and the extension begins.
 
 Chrome Web Store promo tiles (small 440×280 and marquee 1400×560) are rendered the same way: the extension's name and tagline next to part of its popup. They go to `extensions/<name>/public/promo-small.png` and `promo-marquee.png` (left out of the extension package) and are uploaded by hand in the Developer Dashboard. Taglines and the popup each marquee shows are set in [scripts/screenshots/promo.ts](scripts/screenshots/promo.ts).
 

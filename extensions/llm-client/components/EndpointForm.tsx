@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { X } from 'lucide-react'
+import { t } from '../lib/i18n'
 
 /** Form text that depends on the API the endpoint speaks */
 const PROVIDER_TEXT: Record<EndpointProvider, {
@@ -21,21 +22,21 @@ const PROVIDER_TEXT: Record<EndpointProvider, {
   contextHint: string
 }> = {
   ollama: {
-    description: 'Connect to an Ollama server. Default port is 11434.',
-    namePlaceholder: 'Local Ollama',
-    tokenLabel: 'Auth Token',
-    tokenHint: 'Bearer token for authenticated endpoints.',
-    contextPlaceholder: `Default (${DEFAULT_CONTEXT_SIZE})`,
-    contextHint: 'Number of tokens for the context window (num_ctx).',
+    description: t('ollamaDescription'),
+    namePlaceholder: t('ollamaNamePlaceholder'),
+    tokenLabel: t('authToken'),
+    tokenHint: t('authTokenHint'),
+    contextPlaceholder: t('contextDefault', DEFAULT_CONTEXT_SIZE),
+    contextHint: t('ollamaContextHint'),
   },
   openai: {
-    description: 'Connect to OpenAI or any server with an OpenAI-compatible API, such as OpenRouter, LM Studio, llama.cpp or vLLM.',
+    description: t('openaiDescription'),
     namePlaceholder: 'OpenAI',
-    urlHint: 'API base URL, usually ending in /v1.',
-    tokenLabel: 'API Key',
-    tokenHint: 'Sent as a Bearer token. Local servers usually need none.',
-    contextPlaceholder: 'Auto',
-    contextHint: `Model context window in tokens, for the usage meter and page trimming. Defaults to what the server reports, or ${DEFAULT_CONTEXT_SIZE}.`,
+    urlHint: t('openaiUrlHint'),
+    tokenLabel: t('apiKey'),
+    tokenHint: t('apiKeyHint'),
+    contextPlaceholder: t('contextAuto'),
+    contextHint: t('openaiContextHint', DEFAULT_CONTEXT_SIZE),
   },
 }
 
@@ -97,17 +98,17 @@ export default function EndpointForm(props: EndpointFormProps) {
     setError(null)
 
     if (!name.trim()) {
-      setError('Name is required')
+      setError(t('nameRequired'))
       return
     }
     const url = cleanBaseUrl(baseUrl, provider)
     if (!isHttpUrl(url)) {
-      setError('Enter a valid URL (http:// or https://)')
+      setError(t('urlInvalid'))
       return
     }
     const parsed = contextSize.trim() ? parseInt(contextSize.trim(), 10) : undefined
     if (parsed !== undefined && (isNaN(parsed) || parsed < 256)) {
-      setError('Context size must be a number ≥ 256')
+      setError(t('contextSizeInvalid'))
       return
     }
 
@@ -123,7 +124,7 @@ export default function EndpointForm(props: EndpointFormProps) {
       })
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save endpoint')
+      setError(err instanceof Error ? err.message : t('saveEndpointFailed'))
     } finally {
       setSubmitting(false)
     }
@@ -131,7 +132,7 @@ export default function EndpointForm(props: EndpointFormProps) {
 
   return (
     <ContentCard
-      title={isEdit ? 'Edit Endpoint' : 'Add Endpoint'}
+      title={isEdit ? t('editEndpoint') : t('addEndpoint')}
       description={text.description}
       action={
         <Button type="button" variant="ghost" size="icon-sm" onClick={onClose}>
@@ -146,7 +147,7 @@ export default function EndpointForm(props: EndpointFormProps) {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor={`${id}-name`}>Name</Label>
+          <Label htmlFor={`${id}-name`}>{t('name')}</Label>
           <Input
             id={`${id}-name`}
             placeholder={text.namePlaceholder}
@@ -157,7 +158,7 @@ export default function EndpointForm(props: EndpointFormProps) {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor={`${id}-url`}>URL</Label>
+          <Label htmlFor={`${id}-url`}>{t('url')}</Label>
           <Input
             id={`${id}-url`}
             placeholder={PROVIDERS[provider].defaultUrl}
@@ -174,7 +175,7 @@ export default function EndpointForm(props: EndpointFormProps) {
           <Input
             id={`${id}-token`}
             type="password"
-            placeholder="Optional"
+            placeholder={t('optional')}
             value={authToken}
             onChange={(e) => setAuthToken(e.target.value)}
             autoComplete="off"
@@ -183,7 +184,7 @@ export default function EndpointForm(props: EndpointFormProps) {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor={`${id}-ctx`}>Context Size</Label>
+          <Label htmlFor={`${id}-ctx`}>{t('contextSize')}</Label>
           <Input
             id={`${id}-ctx`}
             type="number"
@@ -198,16 +199,16 @@ export default function EndpointForm(props: EndpointFormProps) {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor={`${id}-system`}>System Prompt</Label>
+          <Label htmlFor={`${id}-system`}>{t('systemPrompt')}</Label>
           <Textarea
             id={`${id}-system`}
-            placeholder="Optional"
+            placeholder={t('optional')}
             value={systemPrompt}
             onChange={(e) => setSystemPrompt(e.target.value)}
             rows={3}
             className="resize-y"
           />
-          <p className="text-xs text-muted-foreground">Prepended as a system message to every conversation.</p>
+          <p className="text-xs text-muted-foreground">{t('systemPromptHint')}</p>
         </div>
 
         {error && (
@@ -218,12 +219,12 @@ export default function EndpointForm(props: EndpointFormProps) {
 
         <div className="flex gap-2">
           <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
-            Cancel
+            {t('cancel')}
           </Button>
           <Button type="submit" disabled={submitting} className="flex-1">
             {isEdit
-              ? submitting ? 'Saving…' : 'Save'
-              : submitting ? 'Connecting…' : 'Connect'}
+              ? submitting ? t('saving') : t('save')
+              : submitting ? t('connecting') : t('connect')}
           </Button>
         </div>
       </form>

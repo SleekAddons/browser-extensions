@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { t } from '@/lib/i18n'
 
 interface ItemCounterProps {
   /** Number of items currently added */
@@ -10,8 +11,8 @@ interface ItemCounterProps {
   label: string
   /** Callback when the add button is clicked */
   onAdd: () => void
-  /** Noun used for the add button title, e.g. "Endpoint" → "Add Endpoint". Defaults to "Add" */
-  addLabel?: string
+  /** Tooltip of the add button, e.g. "Add Endpoint". Defaults to "Add" */
+  addTitle?: string
   /** Hide the add button */
   hideAdd?: boolean
   /** Additional class names */
@@ -19,7 +20,7 @@ interface ItemCounterProps {
 }
 
 export default function ItemCounter(props: ItemCounterProps) {
-  const { count, label, onAdd, addLabel = 'Add', hideAdd = false, className } = props
+  const { count, label, onAdd, addTitle = t('add'), hideAdd = false, className } = props
 
   return (
     <div className={cn('flex items-center justify-between rounded-lg border bg-card px-4 py-2', className)}>
@@ -30,7 +31,7 @@ export default function ItemCounter(props: ItemCounterProps) {
         </Badge>
       </div>
       {!hideAdd && (
-        <Button variant="secondary" size="icon-sm" onClick={onAdd} title={`Add ${addLabel}`}>
+        <Button variant="secondary" size="icon-sm" onClick={onAdd} title={addTitle}>
           <Plus size={14} />
         </Button>
       )}
