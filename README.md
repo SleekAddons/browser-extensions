@@ -7,7 +7,7 @@ A collection of browser extensions for Chrome and Firefox, built with [WXT](http
 | Folder | Name | Description | Chrome | Firefox |
 | --- | --- | --- | --- | --- |
 | [extensions/breakpoint-viewer](extensions/breakpoint-viewer/) | Breakpoint Viewer | Show the active CSS breakpoint on any page (Tailwind, Bootstrap, custom). | [Chrome](https://chromewebstore.google.com/detail/tailwind-breakpoint-viewe/opoganallbaahcdakchbmnlmimemobid) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/breakpoint-viewer/) |
-| [extensions/ollama-client](extensions/ollama-client/) | Ollama Client | Chat with local Ollama AI models from a side panel. | [Chrome](https://chromewebstore.google.com/detail/ollama-client/chjmddjaldiindjecpdpfdpojeamfdgb) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/ollama-client-by-sleek-addons/) |
+| [extensions/llm-client](extensions/llm-client/) | LLM Client | Chat with Ollama or any OpenAI-compatible AI model from a side panel. | [Chrome](https://chromewebstore.google.com/detail/ollama-client/chjmddjaldiindjecpdpfdpojeamfdgb) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/ollama-client-by-sleek-addons/) |
 | [extensions/pihole-manager](extensions/pihole-manager/) | Pi-hole Manager | Monitor and control Pi-hole instances from the toolbar. | [Chrome](https://chromewebstore.google.com/detail/pi-hole-manager/lknjhhcjbaahogmgnjfbkdpkenebfcjb) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/pi-hole-manager/) |
 | [extensions/table-extractor](extensions/table-extractor/) | Table Extractor | Extract HTML tables and export to CSV, JSON, XML, HTML, XLSX. | [Chrome](https://chromewebstore.google.com/detail/table-extractor/poheddickmdclbcjkhfkeccfnolplnoi) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/table-extractor/) |
 | [extensions/website-blocker](extensions/website-blocker/) | Website Blocker | Block sites with schedules, time limits, and usage stats. | [Chrome](https://chromewebstore.google.com/detail/website-blocker/bfbhaeaddmhmiilkmolfjfppknmimpei) | [Firefox](https://addons.mozilla.org/en-US/firefox/addon/website-blocker-by-sleekaddons/) |
@@ -31,7 +31,7 @@ Each extension has its own dev script. The browser launches automatically with t
 npm run dev:table-extractor
 npm run dev:breakpoint-viewer
 npm run dev:pihole-manager
-npm run dev:ollama-client
+npm run dev:llm-client
 npm run dev:website-blocker
 ```
 

@@ -20,7 +20,7 @@
     "build:website-blocker": "EXT=website-blocker wxt zip",
     "postinstall": "wxt prepare",
     "generate-icons": "tsx scripts/generate-icons.ts",
-    "generate-promo-tiles": "tsx scripts/generate-promo-tiles.ts",
+    "generate-promo-tiles": "tsx scripts/generate-screenshots.ts --promo",
     "generate-screenshots": "tsx scripts/generate-screenshots.ts",
     "deploy": "tsx scripts/deploy.ts"
   },

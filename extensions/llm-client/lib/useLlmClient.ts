@@ -726,6 +726,11 @@ export function useLlmClient() {
     setActiveEndpointId: (id: string | null) => {
       setActiveEndpointId(id)
       saveActiveEndpointId(id)
+      // A conversation belongs to one endpoint: don't send its history to another server
+      if (activeConversation && activeConversation.endpointId !== id) {
+        setActiveConversationId(null)
+        saveActiveConversationId(null)
+      }
     },
     addNewEndpoint,
     editEndpoint,

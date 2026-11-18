@@ -1,8 +1,8 @@
-import type { Conversation } from '../../../extensions/ollama-client/lib/types'
+import type { Conversation } from '../../../extensions/llm-client/lib/types'
 import type { FetchMock, Scene } from '../stage'
 
 const ARTICLE_TAB = {
-  url: 'https://blog.example.com/heat-pumps',
+  url: 'https://example.com/heat-pumps',
   title: 'How heat pumps keep a home warm',
 }
 
@@ -52,7 +52,7 @@ const SUMMARY: Conversation = {
         '',
         '- They pull warmth from outdoor air, the ground or water and bring it inside, using the same cycle as a fridge.',
         '- A compressor heats the refrigerant, which then releases that heat indoors.',
-        '- One unit of electricity delivers **3–4 units of heat**; a typical seasonal COP is around 3.',
+        '- One unit of electricity delivers **3 to 4 units of heat**; a typical seasonal COP is around 3.',
         '- They work best in well-insulated homes with large radiators or underfloor heating.',
         '',
         '**Before you buy:** check your insulation and ask for a room-by-room heat-loss calculation.',
@@ -96,6 +96,8 @@ const CODE: Conversation = {
   ],
 }
 
+// The extension's real storage keys (they keep the "ollama_" prefix of its old
+// name), in the format saved before endpoints had a provider field.
 function storage(conversation: Conversation, pageContextEnabled: boolean) {
   return {
     local: {
@@ -110,14 +112,14 @@ function storage(conversation: Conversation, pageContextEnabled: boolean) {
   }
 }
 
-export const ollamaClientScenes: Scene[] = [
+export const llmClientScenes: Scene[] = [
   {
     file: '1.png',
-    caption: 'Ask your local Ollama models about the page you are reading, in the side panel',
+    caption: 'Ask AI models about the page you are reading, in the side panel',
     layout: 'band',
-    theme: 'light',
-    headline: 'Chat with local AI next to any page',
-    subhead: 'Summarize or ask questions about what you’re reading, answered by your own Ollama models.',
+    theme: 'dark',
+    headline: 'Chat with AI next to any page',
+    subhead: 'Summarize or ask questions about what you’re reading, answered by local or cloud AI.',
     tab: ARTICLE_TAB,
     page: '/__stage/pages/text.html',
     ui: { kind: 'sidepanel', width: 420 },
@@ -128,12 +130,12 @@ export const ollamaClientScenes: Scene[] = [
   },
   {
     file: '2.png',
-    caption: 'Pick any model installed on your Ollama server',
+    caption: 'Pick any model from your Ollama server or OpenAI-compatible API',
     layout: 'split-left',
-    theme: 'light',
+    theme: 'dark',
     headline: 'Switch between all your models',
-    subhead: 'Every model you have pulled with Ollama is one click away, on this computer or a server at home.',
-    chips: ['Multiple servers', 'Chat history', 'Custom commands'],
+    subhead: 'Every model on your Ollama server or OpenAI-compatible API is one click away, local or in the cloud.',
+    chips: ['Ollama', 'OpenAI-compatible APIs', 'Multiple servers'],
     tab: ARTICLE_TAB,
     ui: { kind: 'popup', width: 600, height: 600 },
     storage: storage(SUMMARY, false),
@@ -143,11 +145,11 @@ export const ollamaClientScenes: Scene[] = [
   },
   {
     file: '3.png',
-    caption: 'Code answers with syntax highlighting, sent only to your own Ollama server',
+    caption: 'Code answers with syntax highlighting, sent only to the server you choose',
     layout: 'split-right',
     theme: 'dark',
     headline: 'Private by design',
-    subhead: 'Chats go only to the Ollama server you choose and are saved in your browser.',
+    subhead: 'Chats go only to the server you choose and are saved in your browser.',
     chips: ['No account', 'Saved locally', 'Markdown & code'],
     tab: ARTICLE_TAB,
     ui: { kind: 'popup', width: 600, height: 600 },

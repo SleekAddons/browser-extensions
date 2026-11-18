@@ -1,7 +1,7 @@
 import { toJson } from '../../../extensions/table-extractor/lib/exporters'
 import { escapeHtml, type Scene } from '../stage'
 
-const TAB = { url: 'https://atlas.example.com/highest-mountains', title: 'Highest mountains' }
+const TAB = { url: 'https://example.com/highest-mountains', title: 'Highest mountains' }
 const PAGE = '/__stage/pages/table.html'
 const POPUP = { kind: 'popup', width: 400, height: 600 } as const
 const READY = { frame: 'popup', selector: 'text=1 table detected on this page' } as const
@@ -44,9 +44,9 @@ function jsonExcerpt(): string {
 export const tableExtractorScenes: Scene[] = [
   {
     file: '1.png',
-    caption: 'Table Extractor finds the tables on the page — pick one to export',
+    caption: 'Table Extractor finds every table on the page so you can pick one to export',
     layout: 'band',
-    theme: 'light',
+    theme: 'dark',
     headline: 'Extract any web table in one click',
     subhead: 'Table Extractor finds the tables on a page so you can preview them and save them as a file.',
     tab: TAB,
@@ -78,7 +78,7 @@ export const tableExtractorScenes: Scene[] = [
     file: '3.png',
     caption: 'Preview the rows of the selected table before saving it as CSV',
     layout: 'split-left',
-    theme: 'light',
+    theme: 'dark',
     headline: 'Preview first, then save',
     subhead: 'Check the rows and columns before you export. Everything runs locally in your browser.',
     chips: ['No sign-up', 'No tracking', 'Free'],

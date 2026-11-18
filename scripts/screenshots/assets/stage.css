@@ -1,4 +1,4 @@
-/* Layout of a 1280x800 store screenshot. See ../stage.ts. */
+/* Layout of a 1280x800 store screenshot and of the promo tiles. See ../stage.ts. */
 
 * {
   box-sizing: border-box;
@@ -14,7 +14,8 @@ body {
   position: relative;
   width: 1280px;
   height: 800px;
-  overflow: hidden;
+  /* clip, not hidden: focusing an input in a popup that runs off the edge must not scroll the canvas */
+  overflow: clip;
   font-family: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
   color: #fafafa;
   -webkit-font-smoothing: antialiased;
@@ -120,7 +121,6 @@ body {
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
   padding: 7px 13px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -130,8 +130,35 @@ body {
   color: #e4e4e7;
 }
 
-.chip svg {
-  color: #a1a1aa;
+/* Promo tiles: icon, extension name and tagline (sizes set inline per tile). */
+.copy.promo {
+  top: 0;
+  bottom: 0;
+  justify-content: center;
+  gap: var(--gap);
+}
+
+.promo-icon {
+  width: var(--icon);
+  height: var(--icon);
+  /* The icon is black on transparent corners: inverted it stands out on the dark canvas. */
+  filter: invert(1) drop-shadow(0 12px 28px rgba(0, 0, 0, 0.55));
+}
+
+.promo-text {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--tagline) * 0.55);
+}
+
+.promo .headline {
+  font-size: var(--name);
+  line-height: 1.04;
+}
+
+.promo .subhead {
+  font-size: var(--tagline);
+  line-height: 1.4;
 }
 
 /* ── Browser window ───────────────────────────────────── */

@@ -1,8 +1,8 @@
 import type { FetchMock, Scene } from '../stage'
 
 const NEWS_TAB = {
-  url: 'https://news.example.com/',
-  title: 'The Morning Ledger — Local news',
+  url: 'https://example.com/',
+  title: 'Example Domain',
 }
 
 const POPUP = { kind: 'popup', width: 400, height: 600 } as const
@@ -61,7 +61,7 @@ export const piholeManagerScenes: Scene[] = [
     file: '1.png',
     caption: 'Status, query stats and blocking switches for all your Pi-hole instances',
     layout: 'split-left',
-    theme: 'light',
+    theme: 'dark',
     headline: 'Every Pi-hole, one click away',
     subhead: 'See query stats and switch ad blocking on or off for all your Pi-hole instances at once.',
     chips: ['Pi-hole v6', 'Multiple instances'],
@@ -95,13 +95,13 @@ export const piholeManagerScenes: Scene[] = [
     file: '3.png',
     caption: 'Check the current site against your lists and allow or block it',
     layout: 'split-left',
-    theme: 'light',
+    theme: 'dark',
     headline: 'Allow or block the site you’re on',
     subhead: 'See whether the current domain is on your allow or deny list, and change it in one click.',
     tab: NEWS_TAB,
     ui: POPUP,
     storage: { local: { pihole_instances: INSTANCES } },
-    fetch: piholeApi([{ domain: 'news.example.com', type: 'deny', kind: 'exact', enabled: true, comment: null }]),
+    fetch: piholeApi([{ domain: 'example.com', type: 'deny', kind: 'exact', enabled: true, comment: null }]),
     ready: READY,
     actions: [
       { waitFor: 'text=Remove Block' },

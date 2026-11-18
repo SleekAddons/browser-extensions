@@ -7,7 +7,7 @@
 
 import { createElement, type ComponentType } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { ArrowLeft, ArrowRight, Check, EllipsisVertical, Globe, Plus, RotateCw, SlidersHorizontal, Star, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, EllipsisVertical, Globe, Plus, RotateCw, SlidersHorizontal, Star, X } from 'lucide-react'
 
 export type Theme = 'light' | 'dark'
 export type FrameRole = 'page' | 'popup' | 'sidepanel'
@@ -44,17 +44,23 @@ export type SceneUi =
   | { kind: 'none' }
 
 export interface Scene {
-  /** Output file name inside extensions/<slug>/screenshots/. */
+  /** Output file name inside extensions/<slug>/screenshots/ (promo tiles: public/). */
   file: string
   /** Short description, uploaded as the screenshot caption where supported. */
   caption: string
-  /** Large headline; trusted HTML (may contain <br>). */
+  /** Large headline; trusted HTML (may contain <br>). Promo tiles show the extension name instead. */
   headline: string
   subhead?: string
   /** Small pills under the subhead (split layouts only). */
   chips?: string[]
-  /** Where the copy goes: beside the UI, or as a band above it. */
-  layout: 'split-left' | 'split-right' | 'band'
+  /**
+   * Where the copy goes: beside the UI, or as a band above it. `promo` is for
+   * promo tiles: the extension's icon, name and subhead on the left, and the
+   * popup (if any) placed with `ui.at` / `ui.scale`.
+   */
+  layout: 'split-left' | 'split-right' | 'band' | 'promo'
+  /** Canvas size; defaults to the 1280x800 store screenshot. */
+  size?: { width: number; height: number }
   /** Theme of the extension UI and the browser chrome. */
   theme: Theme
   /** What tabs.query() returns as the active tab, and what the browser window shows. */
@@ -193,11 +199,36 @@ function renderPopup(scene: Scene): string {
   </div>`
 }
 
-function renderCopy(scene: Scene): string {
+/** Canvas size of a scene in CSS pixels. */
+export function canvasSize(scene: Scene): { width: number; height: number } {
+  return scene.size ?? { width: 1280, height: 800 }
+}
+
+/** Promo tile copy: the extension icon over its name and tagline, sized to the tile. */
+function renderPromoCopy(scene: Scene, name: string): string {
+  const { width } = canvasSize(scene)
+  const small = width < 800
+  const margin = small ? 36 : 96
+  // On the marquee the text stops well before the popup
+  const right = scene.ui.kind === 'popup' && scene.ui.at ? width - scene.ui.at.left + margin * 0.6 : margin
+  const sizes = small
+    ? '--icon:58px;--gap:18px;--name:32px;--tagline:16px'
+    : '--icon:104px;--gap:30px;--name:66px;--tagline:26px'
+  return `<div class="copy promo" style="${sizes};left:${margin}px;right:${right}px">
+    <img class="promo-icon" src="/icon128.png" alt="">
+    <div class="promo-text">
+      <h1 class="headline">${escapeHtml(name)}</h1>
+      ${scene.subhead ? `<p class="subhead">${escapeHtml(scene.subhead)}</p>` : ''}
+    </div>
+  </div>`
+}
+
+function renderCopy(scene: Scene, name: string): string {
+  if (scene.layout === 'promo') return renderPromoCopy(scene, name)
   const side = scene.layout === 'band' ? 'band' : `split ${scene.layout === 'split-left' ? 'left' : 'right'}`
   const chips =
     scene.chips?.length && scene.layout !== 'band'
-      ? `<div class="chips">${scene.chips.map((c) => `<span class="chip">${icon(Check, 14, 2.5)}${escapeHtml(c)}</span>`).join('')}</div>`
+      ? `<div class="chips">${scene.chips.map((c) => `<span class="chip">${escapeHtml(c)}</span>`).join('')}</div>`
       : ''
   return `<div class="copy ${side}">
     <h1 class="headline">${scene.headline}</h1>
@@ -207,6 +238,7 @@ function renderCopy(scene: Scene): string {
 }
 
 function glowPosition(scene: Scene): string {
+  if (scene.layout === 'promo') return canvasSize(scene).width < 800 ? 'left:-300px;top:-470px' : 'left:640px;top:-260px'
   if (scene.layout === 'band') return 'left:260px;top:240px'
   return scene.layout === 'split-left' ? 'left:620px;top:120px' : 'left:-40px;top:120px'
 }
@@ -223,9 +255,9 @@ export function renderStage(scene: Scene, name: string): string {
   <link rel="stylesheet" href="/__stage/stage.css">
 </head>
 <body>
-  <div class="canvas">
+  <div class="canvas" style="width:${canvasSize(scene).width}px;height:${canvasSize(scene).height}px">
     <div class="glow" style="${glowPosition(scene)}"></div>
-    ${renderCopy(scene)}
+    ${renderCopy(scene, name)}
     ${showsBrowser(scene) ? renderBrowser(scene, name) : ''}
     ${scene.page && !showsBrowser(scene) ? `<iframe class="offscreen-page" data-role="page" src="${escapeHtml(scene.page)}" title="page"></iframe>` : ''}
     ${renderPopup(scene)}

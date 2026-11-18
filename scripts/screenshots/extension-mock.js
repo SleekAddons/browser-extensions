@@ -272,7 +272,11 @@
   install(window)
 
   try {
-    if (data.theme) localStorage.setItem('app-theme', data.theme)
+    // Whatever fills the browser viewport (e.g. a blocked-site page) stays
+    // light so the extension UI next to it stands out; the popup and side
+    // panel use the scene theme. Frames load one after the other, page first.
+    const inViewport = window.frameElement?.getAttribute('data-role') === 'page'
+    if (data.theme) localStorage.setItem('app-theme', inViewport ? 'light' : data.theme)
   } catch {
     // Storage can be unavailable; the page then follows prefers-color-scheme.
   }
