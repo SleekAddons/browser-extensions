@@ -64,7 +64,7 @@ npm run generate-icons              # regenerate for all extensions
 npx tsx scripts/generate-icons.ts table-extractor   # regenerate for one
 ```
 
-Override initials in [scripts/generate-icons.ts](scripts/generate-icons.ts) via `INITIALS_OVERRIDE`. Promo tiles for store listings are generated similarly with `npm run generate-promo-tiles`.
+Override initials in [scripts/generate-icons.ts](scripts/generate-icons.ts) via `INITIALS_OVERRIDE`.
 
 ## Store screenshots
 
@@ -77,7 +77,14 @@ npm run generate-screenshots                                 # all extensions
 npm run generate-screenshots -- table-extractor --only 2     # one screenshot
 ```
 
-The generator builds the extension and renders its real popup or side panel with demo data. Scenes (headline, demo data, clicks) live in [scripts/screenshots/scenes/](scripts/screenshots/scenes/).
+The generator builds the extension and renders its real popup or side panel with demo data. Scenes (headline, demo data, clicks) live in [scripts/screenshots/scenes/](scripts/screenshots/scenes/). The extension UI is shown in dark theme, while demo websites stay light so it is clear where the page ends and the extension begins.
+
+Chrome Web Store promo tiles (small 440×280 and marquee 1400×560) are rendered the same way: the extension's name and tagline next to part of its popup. They go to `extensions/<name>/public/promo-small.png` and `promo-marquee.png` (left out of the extension package) and are uploaded by hand in the Developer Dashboard. Taglines and the popup each marquee shows are set in [scripts/screenshots/promo.ts](scripts/screenshots/promo.ts).
+
+```bash
+npm run generate-promo-tiles                                 # all extensions
+npm run generate-promo-tiles -- llm-client --only promo-marquee
+```
 
 ## Publishing to the stores
 

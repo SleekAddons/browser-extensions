@@ -1,8 +1,8 @@
 /**
  * Chrome Web Store promo tiles, rendered on the same dark stage as the store
- * screenshots: the extension's icon, name and tagline, plus on the marquee its
- * popup (taken from one of its screenshot scenes) running off the bottom edge.
- * The small tile stays text-only so it still reads at its size.
+ * screenshots: the extension's name and tagline next to its popup (taken from
+ * one of its screenshot scenes). On the marquee the popup runs off the bottom
+ * edge; on the small tile it is shrunk and runs off the right and bottom edges.
  *
  * Output (npm run generate-promo-tiles):
  *   extensions/<slug>/public/promo-small.png    440x280
@@ -18,9 +18,12 @@ const MARQUEE = { width: 1400, height: 560 }
 /** Space between the marquee's popup and its right edge, and above the popup. */
 const MARQUEE_INSET = { right: 96, top: 64 }
 
+/** The small tile's popup: shrunk, right of the text, cut off by the right and bottom edges. */
+const SMALL_POPUP = { left: 246, top: 40, scale: 0.56 }
+
 /**
  * The two tiles for one extension. `from` is the screenshot scene whose popup
- * (with its demo data) the marquee shows; `actions` default to that scene's.
+ * (with its demo data) the tiles show; `actions` default to that scene's.
  */
 function promoTiles(tagline: string, from: Scene, actions: Action[] | undefined = from.actions): Scene[] {
   if (from.ui.kind !== 'popup') throw new Error(`Promo tiles need a popup scene, ${from.file} is not one`)
@@ -35,10 +38,20 @@ function promoTiles(tagline: string, from: Scene, actions: Action[] | undefined 
     fetch: from.fetch,
   } as const
 
+  // The popup may read the active tab (tables, the breakpoint badge): load the page off-canvas.
+  const withPopup = { page: from.page, showPage: false, ready: from.ready, actions }
+
   return [
-    { ...base, file: 'promo-small.png', size: SMALL, ui: { kind: 'none' } },
     {
       ...base,
+      ...withPopup,
+      file: 'promo-small.png',
+      size: SMALL,
+      ui: { ...from.ui, at: { left: SMALL_POPUP.left, top: SMALL_POPUP.top }, scale: SMALL_POPUP.scale },
+    },
+    {
+      ...base,
+      ...withPopup,
       file: 'promo-marquee.png',
       size: MARQUEE,
       ui: {
@@ -46,11 +59,6 @@ function promoTiles(tagline: string, from: Scene, actions: Action[] | undefined 
         at: { left: MARQUEE.width - MARQUEE_INSET.right - from.ui.width, top: MARQUEE_INSET.top },
         scale: 1,
       },
-      // The popup may read the active tab (tables, the breakpoint badge): load the page off-canvas.
-      page: from.page,
-      showPage: false,
-      ready: from.ready,
-      actions,
     },
   ]
 }

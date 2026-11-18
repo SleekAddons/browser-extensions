@@ -55,8 +55,8 @@ export interface Scene {
   chips?: string[]
   /**
    * Where the copy goes: beside the UI, or as a band above it. `promo` is for
-   * promo tiles: the extension's icon, name and subhead on the left, and the
-   * popup (if any) placed with `ui.at` / `ui.scale`.
+   * promo tiles: the extension's name and subhead on the left, and the popup
+   * (if any) placed with `ui.at` / `ui.scale`.
    */
   layout: 'split-left' | 'split-right' | 'band' | 'promo'
   /** Canvas size; defaults to the 1280x800 store screenshot. */
@@ -199,27 +199,35 @@ function renderPopup(scene: Scene): string {
   </div>`
 }
 
+/** Keep hyphenated words (OpenAI-compatible, Pi-hole) on one line. Tags are left alone. */
+function keepHyphenatedWords(html: string): string {
+  return html
+    .split(/(<[^>]*>)/)
+    .map((part, i) => (i % 2 ? part : part.replace(/[^\s-]+(?:-[^\s-]+)+/g, (word) => `<span class="nowrap">${word}</span>`)))
+    .join('')
+}
+
+/** Escape copy text and keep its hyphenated words together. */
+function copyText(text: string): string {
+  return keepHyphenatedWords(escapeHtml(text))
+}
+
 /** Canvas size of a scene in CSS pixels. */
 export function canvasSize(scene: Scene): { width: number; height: number } {
   return scene.size ?? { width: 1280, height: 800 }
 }
 
-/** Promo tile copy: the extension icon over its name and tagline, sized to the tile. */
+/** Promo tile copy: the extension name over its tagline, sized to the tile. */
 function renderPromoCopy(scene: Scene, name: string): string {
   const { width } = canvasSize(scene)
   const small = width < 800
-  const margin = small ? 36 : 96
-  // On the marquee the text stops well before the popup
+  const margin = small ? 30 : 96
+  // The text stops well before the popup
   const right = scene.ui.kind === 'popup' && scene.ui.at ? width - scene.ui.at.left + margin * 0.6 : margin
-  const sizes = small
-    ? '--icon:58px;--gap:18px;--name:32px;--tagline:16px'
-    : '--icon:104px;--gap:30px;--name:66px;--tagline:26px'
+  const sizes = small ? '--name:27px;--tagline:14px' : '--name:72px;--tagline:28px'
   return `<div class="copy promo" style="${sizes};left:${margin}px;right:${right}px">
-    <img class="promo-icon" src="/icon128.png" alt="">
-    <div class="promo-text">
-      <h1 class="headline">${escapeHtml(name)}</h1>
-      ${scene.subhead ? `<p class="subhead">${escapeHtml(scene.subhead)}</p>` : ''}
-    </div>
+    <h1 class="headline">${copyText(name)}</h1>
+    ${scene.subhead ? `<p class="subhead">${copyText(scene.subhead)}</p>` : ''}
   </div>`
 }
 
@@ -231,14 +239,14 @@ function renderCopy(scene: Scene, name: string): string {
       ? `<div class="chips">${scene.chips.map((c) => `<span class="chip">${escapeHtml(c)}</span>`).join('')}</div>`
       : ''
   return `<div class="copy ${side}">
-    <h1 class="headline">${scene.headline}</h1>
-    ${scene.subhead ? `<p class="subhead">${escapeHtml(scene.subhead)}</p>` : ''}
+    <h1 class="headline">${keepHyphenatedWords(scene.headline)}</h1>
+    ${scene.subhead ? `<p class="subhead">${copyText(scene.subhead)}</p>` : ''}
     ${chips}
   </div>`
 }
 
 function glowPosition(scene: Scene): string {
-  if (scene.layout === 'promo') return canvasSize(scene).width < 800 ? 'left:-300px;top:-470px' : 'left:640px;top:-260px'
+  if (scene.layout === 'promo') return canvasSize(scene).width < 800 ? 'left:-60px;top:-460px' : 'left:640px;top:-260px'
   if (scene.layout === 'band') return 'left:260px;top:240px'
   return scene.layout === 'split-left' ? 'left:620px;top:120px' : 'left:-40px;top:120px'
 }

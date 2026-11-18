@@ -103,7 +103,13 @@ body {
   font-size: 19px;
   line-height: 1.5;
   color: #a1a1aa;
-  text-wrap: pretty;
+  /* Even lines rather than one long line and a stray word */
+  text-wrap: balance;
+}
+
+/* Hyphenated words (OpenAI-compatible, Pi-hole) never split across lines */
+.nowrap {
+  white-space: nowrap;
 }
 
 .band .subhead {
@@ -122,6 +128,7 @@ body {
   display: inline-flex;
   align-items: center;
   padding: 7px 13px;
+  white-space: nowrap;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.06);
@@ -130,24 +137,11 @@ body {
   color: #e4e4e7;
 }
 
-/* Promo tiles: icon, extension name and tagline (sizes set inline per tile). */
+/* Promo tiles: extension name and tagline (sizes set inline per tile). */
 .copy.promo {
   top: 0;
   bottom: 0;
   justify-content: center;
-  gap: var(--gap);
-}
-
-.promo-icon {
-  width: var(--icon);
-  height: var(--icon);
-  /* The icon is black on transparent corners: inverted it stands out on the dark canvas. */
-  filter: invert(1) drop-shadow(0 12px 28px rgba(0, 0, 0, 0.55));
-}
-
-.promo-text {
-  display: flex;
-  flex-direction: column;
   gap: calc(var(--tagline) * 0.55);
 }
 
